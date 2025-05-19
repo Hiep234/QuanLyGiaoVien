@@ -27,7 +27,7 @@
       <!-- Chào mừng -->
       <section id="welcome" class="bg-white p-6 rounded shadow">
         <h2 class="text-3xl font-bold mb-6 text-center">🎉 Chào mừng đến với Quản lý Giáo viên!</h2>
-        <p class="text-center mb-4">Chúc bạn sử dụng ứng dụng hiệu quả. Vui lòng chọn một chức năng từ menu bên trái để bắt đầu.</p>
+        <p class="text-center mb-4">Vui lòng chọn một chức năng từ menu bên trái để bắt đầu.</p>
       </section>
 
       <!-- Bằng cấp -->
@@ -122,7 +122,8 @@
       <!-- Giáo viên -->
       <section id="teachers" class="hidden bg-white p-6 rounded shadow relative">
         <h2 class="text-xl font-bold mb-4">👩‍🏫 Danh sách giáo viên</h2>
-        <button onclick="togglePopup('popupTeacherForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
+        <button onclick="togglePopup('popupTeacherForm')" class="mb-4 bg-green-5
+00 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
         <table class="w-full text-left border">
           <thead>
             <tr class="bg-gray-100">
@@ -130,6 +131,8 @@
               <th class="border px-4 py-2">Mã GV</th>
               <th class="border px-4 py-2">Họ tên</th>
               <th class="border px-4 py-2">Ngày Sinh</th>
+              <th class="border px-4 py-2">Email</th>
+              <th class="border px-4 py-2">Số điện thoại</th>
               <th class="border px-4 py-2">Khoa</th>
               <th class="border px-4 py-2">Bằng cấp</th>
               <th class="border px-4 py-2">Hành động</th>
@@ -145,6 +148,8 @@
             <input id="teacherCode" type="text" placeholder="Mã GV" class="border p-2 w-full mb-2" />
             <input id="teacherName" type="text" placeholder="Họ tên" class="border p-2 w-full mb-2" />
             <input id="teacherBirthDate" type="date" placeholder="Ngày Sinh" class="border p-2 w-full mb-2" />
+            <input id="teacherEmail" type="email" placeholder="Email" class="border p-2 w-full mb-2" />
+            <input id="teacherPhone" type="tel" placeholder="Số điện thoại" class="border p-2 w-full mb-2" />
             <select id="teacherFaculty" class="border p-2 w-full mb-2">
               <option value="">Chọn khoa</option>
             </select>
@@ -165,6 +170,8 @@
             <input id="editTeacherCode" type="text" placeholder="Mã GV" class="border p-2 w-full mb-2" />
             <input id="editTeacherName" type="text" placeholder="Họ tên" class="border p-2 w-full mb-2" />
             <input id="editTeacherBirthDate" type="date" placeholder="Ngày Sinh" class="border p-2 w-full mb-2" />
+            <input id="editTeacherEmail" type="email" placeholder="Email" class="border p-2 w-full mb-2" />
+            <input id="editTeacherPhone" type="tel" placeholder="Số điện thoại" class="border p-2 w-full mb-2" />
             <select id="editTeacherFaculty" class="border p-2 w-full mb-2">
               <option value="">Chọn khoa</option>
             </select>
@@ -205,6 +212,8 @@
                 <th class="border px-4 py-2">Mã GV</th>
                 <th class="border px-4 py-2">Họ tên</th>
                 <th class="border px-4 py-2">Ngày Sinh</th>
+                <th class="border px-4 py-2">Email</th>
+                <th class="border px-4 py-2">Số điện thoại</th>
                 <th class="border px-4 py-2">Khoa</th>
                 <th class="border px-4 py-2">Bằng cấp</th>
               </tr>
@@ -297,6 +306,8 @@
               <td class="border px-4 py-2">${t.code || ''}</td>
               <td class="border px-4 py-2">${t.name || ''}</td>
               <td class="border px-4 py-2">${formattedBirthDate}</td>
+              <td class="border px-4 py-2">${t.email || ''}</td>
+              <td class="border px-4 py-2">${t.phone || ''}</td>
               <td class="border px-4 py-2">${t.facultyId?.fullName || ''}</td>
               <td class="border px-4 py-2">${t.degreeId?.fullName || ''}</td>
               <td class="border px-4 py-2 space-x-2">
@@ -320,7 +331,7 @@
       });
       document.getElementById(id).classList.remove('hidden');
       if (id !== 'welcome') {
-        fetchData(); // Gọi fetchData() khi chuyển sang các section khác ngoài "welcome"
+        fetchData();
       }
     }
 
@@ -433,17 +444,21 @@
       const code = document.getElementById('teacherCode').value;
       const name = document.getElementById('teacherName').value;
       const birthDate = document.getElementById('teacherBirthDate').value;
+      const email = document.getElementById('teacherEmail').value;
+      const phone = document.getElementById('teacherPhone').value;
       const facultyId = document.getElementById('teacherFaculty').value;
       const degreeId = document.getElementById('teacherDegree').value;
       if (!code || !name || !birthDate || !facultyId || !degreeId) {
-        return alert('Vui lòng nhập đầy đủ thông tin');
+        return alert('Vui lòng nhập đầy đủ thông tin (Mã GV, Họ tên, Ngày Sinh, Khoa, Bằng cấp)');
       }
       try {
-        console.log('Dữ liệu gửi lên API:', { code, name, birthDate, facultyId, degreeId });
-        await axios.post('http://localhost:3000/api/teachers', { code, name, birthDate, facultyId, degreeId });
+        console.log('Dữ liệu gửi lên API:', { code, name, birthDate, email, phone, facultyId, degreeId });
+        await axios.post('http://localhost:3000/api/teachers', { code, name, birthDate, email, phone, facultyId, degreeId });
         document.getElementById('teacherCode').value = '';
         document.getElementById('teacherName').value = '';
         document.getElementById('teacherBirthDate').value = '';
+        document.getElementById('teacherEmail').value = '';
+        document.getElementById('teacherPhone').value = '';
         document.getElementById('teacherFaculty').value = '';
         document.getElementById('teacherDegree').value = '';
         togglePopup('popupTeacherForm');
@@ -475,6 +490,8 @@
       document.getElementById('editTeacherCode').value = teacher.code || '';
       document.getElementById('editTeacherName').value = teacher.name || '';
       document.getElementById('editTeacherBirthDate').value = teacher.birthDate ? new Date(teacher.birthDate).toISOString().split('T')[0] : '';
+      document.getElementById('editTeacherEmail').value = teacher.email || '';
+      document.getElementById('editTeacherPhone').value = teacher.phone || '';
       document.getElementById('editTeacherFaculty').value = teacher.facultyId?._id || '';
       document.getElementById('editTeacherDegree').value = teacher.degreeId?._id || '';
       togglePopup('popupEditTeacherForm');
@@ -484,14 +501,16 @@
       const code = document.getElementById('editTeacherCode').value;
       const name = document.getElementById('editTeacherName').value;
       const birthDate = document.getElementById('editTeacherBirthDate').value;
+      const email = document.getElementById('editTeacherEmail').value;
+      const phone = document.getElementById('editTeacherPhone').value;
       const facultyId = document.getElementById('editTeacherFaculty').value;
       const degreeId = document.getElementById('editTeacherDegree').value;
       if (!code || !name || !birthDate || !facultyId || !degreeId) {
-        return alert('Vui lòng nhập đầy đủ thông tin');
+        return alert('Vui lòng nhập đầy đủ thông tin (Mã GV, Họ tên, Ngày Sinh, Khoa, Bằng cấp)');
       }
       try {
-        console.log('Dữ liệu cập nhật gửi lên API:', { code, name, birthDate, facultyId, degreeId });
-        await axios.put(`http://localhost:3000/api/teachers/${editingTeacherId}`, { code, name, birthDate, facultyId, degreeId });
+        console.log('Dữ liệu cập nhật gửi lên API:', { code, name, birthDate, email, phone, facultyId, degreeId });
+        await axios.put(`http://localhost:3000/api/teachers/${editingTeacherId}`, { code, name, birthDate, email, phone, facultyId, degreeId });
         togglePopup('popupEditTeacherForm');
         fetchData();
       } catch (err) {
@@ -530,6 +549,8 @@
             <td class="border px-4 py-2">${t.code || ''}</td>
             <td class="border px-4 py-2">${t.name || ''}</td>
             <td class="border px-4 py-2">${formattedBirthDate}</td>
+            <td class="border px-4 py-2">${t.email || ''}</td>
+            <td class="border px-4 py-2">${t.phone || ''}</td>
             <td class="border px-4 py-2">${t.facultyId?.fullName || ''}</td>
             <td class="border px-4 py-2">${t.degreeId?.fullName || ''}</td>
           </tr>`;
@@ -541,7 +562,7 @@
     document.getElementById('degreeFilter').addEventListener('change', updateCount);
 
     fetchData();
-    showSection('welcome'); // Hiển thị "Chào mừng" khi trang tải
+    showSection('welcome');
   </script>
 </body>
 </html>
