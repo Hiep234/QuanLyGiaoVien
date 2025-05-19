@@ -6,34 +6,30 @@
   <title>Quản lý giáo viên</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://unpkg.com/axios/dist/axios.min.js"></script>
-</head>
+  </head>
 <body class="bg-gray-100">
   <div class="flex min-h-screen">
-    <!-- Sidebar -->
     <aside class="w-64 bg-slate-800 text-white p-6">
       <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
         <span>📚</span> Chức năng
       </h2>
       <nav class="flex flex-col gap-4">
-        <button onclick="showSection('degrees')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Bằng cấp</button>
-        <button onclick="showSection('faculties')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Khoa</button>
-        <button onclick="showSection('teachers')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Giáo viên</button>
-        <button onclick="showSection('statistics')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Thống kê</button>
+        <button onclick="handleShowSection('degrees')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Bằng cấp</button>
+        <button onclick="handleShowSection('faculties')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Khoa</button>
+        <button onclick="handleShowSection('teachers')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Giáo viên</button>
+        <button onclick="handleShowSection('statistics')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Thống kê</button>
       </nav>
     </aside>
 
-    <!-- Main content -->
     <main class="flex-1 p-8 space-y-8">
-      <!-- Chào mừng -->
       <section id="welcome" class="bg-white p-6 rounded shadow">
         <h2 class="text-3xl font-bold mb-6 text-center">🎉 Chào mừng đến với Quản lý Giáo viên!</h2>
         <p class="text-center mb-4">Vui lòng chọn một chức năng từ menu bên trái để bắt đầu.</p>
       </section>
 
-      <!-- Bằng cấp -->
       <section id="degrees" class="hidden bg-white p-6 rounded shadow relative">
         <h2 class="text-xl font-bold mb-4">🎓 Danh sách bằng cấp</h2>
-        <button onclick="togglePopup('popupForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
+        <button onclick="UI.togglePopup('popupForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
         <table class="w-full text-left border">
           <thead>
             <tr class="bg-gray-100">
@@ -45,38 +41,33 @@
           </thead>
           <tbody id="degreeTable"></tbody>
         </table>
-
-        <!-- Pop-up form -->
         <div id="popupForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
           <div class="bg-white p-6 rounded shadow-lg w-96 relative">
             <h3 class="text-lg font-semibold mb-2">Thêm bằng cấp</h3>
             <input id="degreeFullName" type="text" placeholder="Tên đầy đủ" class="border p-2 w-full mb-2" />
             <input id="degreeShortName" type="text" placeholder="Tên viết tắt" class="border p-2 w-full mb-2" />
             <div class="flex justify-end gap-2">
-              <button onclick="addDegree()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
-              <button onclick="togglePopup('popupForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+              <button onclick="DegreeHandlers.add()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
+              <button onclick="UI.togglePopup('popupForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
             </div>
           </div>
         </div>
-
-        <!-- Pop-up edit form -->
         <div id="popupEditForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
           <div class="bg-white p-6 rounded shadow-lg w-96 relative">
             <h3 class="text-lg font-semibold mb-2">Sửa bằng cấp</h3>
             <input id="editDegreeFullName" type="text" class="border p-2 w-full mb-2" />
             <input id="editDegreeShortName" type="text" class="border p-2 w-full mb-2" />
             <div class="flex justify-end gap-2">
-              <button onclick="updateDegree()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
-              <button onclick="togglePopup('popupEditForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+              <button onclick="DegreeHandlers.update()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
+              <button onclick="UI.togglePopup('popupEditForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Khoa -->
       <section id="faculties" class="hidden bg-white p-6 rounded shadow relative">
         <h2 class="text-xl font-bold mb-4">🏛️ Danh sách khoa</h2>
-        <button onclick="togglePopup('popupFacultyForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
+        <button onclick="UI.togglePopup('popupFacultyForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
         <table class="w-full text-left border">
           <thead>
             <tr class="bg-gray-100">
@@ -89,41 +80,35 @@
           </thead>
           <tbody id="facultyTable"></tbody>
         </table>
-
-        <!-- Pop-up form -->
         <div id="popupFacultyForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-          <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-            <h3 class="text-lg font-semibold mb-2">Thêm khoa</h3>
-            <input id="facultyFullName" type="text" placeholder="Tên đầy đủ" class="border p-2 w-full mb-2" />
-            <input id="facultyShortName" type="text" placeholder="Tên viết tắt" class="border p-2 w-full mb-2" />
-            <textarea id="facultyDescription" placeholder="Mô tả" class="border p-2 w-full mb-2" rows="4"></textarea>
-            <div class="flex justify-end gap-2">
-              <button onclick="addFaculty()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
-              <button onclick="togglePopup('popupFacultyForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+            <div class="bg-white p-6 rounded shadow-lg w-96 relative">
+                <h3 class="text-lg font-semibold mb-2">Thêm khoa</h3>
+                <input id="facultyFullName" type="text" placeholder="Tên đầy đủ" class="border p-2 w-full mb-2" />
+                <input id="facultyShortName" type="text" placeholder="Tên viết tắt" class="border p-2 w-full mb-2" />
+                <textarea id="facultyDescription" placeholder="Mô tả" class="border p-2 w-full mb-2" rows="4"></textarea>
+                <div class="flex justify-end gap-2">
+                    <button onclick="FacultyHandlers.add()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
+                    <button onclick="UI.togglePopup('popupFacultyForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+                </div>
             </div>
-          </div>
         </div>
-
-        <!-- Pop-up edit form -->
         <div id="popupEditFacultyForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-          <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-            <h3 class="text-lg font-semibold mb-2">Sửa khoa</h3>
-            <input id="editFacultyFullName" type="text" class="border p-2 w-full mb-2" />
-            <input id="editFacultyShortName" type="text" class="border p-2 w-full mb-2" />
-            <textarea id="editFacultyDescription" class="border p-2 w-full mb-2" rows="4"></textarea>
-            <div class="flex justify-end gap-2">
-              <button onclick="updateFaculty()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
-              <button onclick="togglePopup('popupEditFacultyForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+            <div class="bg-white p-6 rounded shadow-lg w-96 relative">
+                <h3 class="text-lg font-semibold mb-2">Sửa khoa</h3>
+                <input id="editFacultyFullName" type="text" class="border p-2 w-full mb-2" />
+                <input id="editFacultyShortName" type="text" class="border p-2 w-full mb-2" />
+                <textarea id="editFacultyDescription" class="border p-2 w-full mb-2" rows="4"></textarea>
+                <div class="flex justify-end gap-2">
+                    <button onclick="FacultyHandlers.update()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
+                    <button onclick="UI.togglePopup('popupEditFacultyForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+                </div>
             </div>
-          </div>
         </div>
       </section>
 
-      <!-- Giáo viên -->
       <section id="teachers" class="hidden bg-white p-6 rounded shadow relative">
         <h2 class="text-xl font-bold mb-4">👩‍🏫 Danh sách giáo viên</h2>
-        <button onclick="togglePopup('popupTeacherForm')" class="mb-4 bg-green-5
-00 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
+        <button onclick="UI.togglePopup('popupTeacherForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
         <table class="w-full text-left border">
           <thead>
             <tr class="bg-gray-100">
@@ -140,53 +125,48 @@
           </thead>
           <tbody id="teacherTable"></tbody>
         </table>
-
-        <!-- Pop-up form -->
         <div id="popupTeacherForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-          <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-            <h3 class="text-lg font-semibold mb-2">Thêm giáo viên</h3>
-            <input id="teacherCode" type="text" placeholder="Mã GV" class="border p-2 w-full mb-2" />
-            <input id="teacherName" type="text" placeholder="Họ tên" class="border p-2 w-full mb-2" />
-            <input id="teacherBirthDate" type="date" placeholder="Ngày Sinh" class="border p-2 w-full mb-2" />
-            <input id="teacherEmail" type="email" placeholder="Email" class="border p-2 w-full mb-2" />
-            <input id="teacherPhone" type="tel" placeholder="Số điện thoại" class="border p-2 w-full mb-2" />
-            <select id="teacherFaculty" class="border p-2 w-full mb-2">
-              <option value="">Chọn khoa</option>
-            </select>
-            <select id="teacherDegree" class="border p-2 w-full mb-2">
-              <option value="">Chọn bằng cấp</option>
-            </select>
-            <div class="flex justify-end gap-2">
-              <button onclick="addTeacher()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
-              <button onclick="togglePopup('popupTeacherForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+            <div class="bg-white p-6 rounded shadow-lg w-96 relative">
+                <h3 class="text-lg font-semibold mb-2">Thêm giáo viên</h3>
+                <input id="teacherCode" type="text" placeholder="Mã GV" class="border p-2 w-full mb-2" />
+                <input id="teacherName" type="text" placeholder="Họ tên" class="border p-2 w-full mb-2" />
+                <input id="teacherBirthDate" type="date" placeholder="Ngày Sinh" class="border p-2 w-full mb-2" />
+                <input id="teacherEmail" type="email" placeholder="Email" class="border p-2 w-full mb-2" />
+                <input id="teacherPhone" type="tel" placeholder="Số điện thoại" class="border p-2 w-full mb-2" />
+                <select id="teacherFaculty" class="border p-2 w-full mb-2">
+                    <option value="">Chọn khoa</option>
+                </select>
+                <select id="teacherDegree" class="border p-2 w-full mb-2">
+                    <option value="">Chọn bằng cấp</option>
+                </select>
+                <div class="flex justify-end gap-2">
+                    <button onclick="TeacherHandlers.add()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
+                    <button onclick="UI.togglePopup('popupTeacherForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+                </div>
             </div>
-          </div>
         </div>
-
-        <!-- Pop-up edit form -->
         <div id="popupEditTeacherForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-          <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-            <h3 class="text-lg font-semibold mb-2">Sửa giáo viên</h3>
-            <input id="editTeacherCode" type="text" placeholder="Mã GV" class="border p-2 w-full mb-2" />
-            <input id="editTeacherName" type="text" placeholder="Họ tên" class="border p-2 w-full mb-2" />
-            <input id="editTeacherBirthDate" type="date" placeholder="Ngày Sinh" class="border p-2 w-full mb-2" />
-            <input id="editTeacherEmail" type="email" placeholder="Email" class="border p-2 w-full mb-2" />
-            <input id="editTeacherPhone" type="tel" placeholder="Số điện thoại" class="border p-2 w-full mb-2" />
-            <select id="editTeacherFaculty" class="border p-2 w-full mb-2">
-              <option value="">Chọn khoa</option>
-            </select>
-            <select id="editTeacherDegree" class="border p-2 w-full mb-2">
-              <option value="">Chọn bằng cấp</option>
-            </select>
-            <div class="flex justify-end gap-2">
-              <button onclick="updateTeacher()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
-              <button onclick="togglePopup('popupEditTeacherForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+            <div class="bg-white p-6 rounded shadow-lg w-96 relative">
+                <h3 class="text-lg font-semibold mb-2">Sửa giáo viên</h3>
+                <input id="editTeacherCode" type="text" placeholder="Mã GV" class="border p-2 w-full mb-2" />
+                <input id="editTeacherName" type="text" placeholder="Họ tên" class="border p-2 w-full mb-2" />
+                <input id="editTeacherBirthDate" type="date" placeholder="Ngày Sinh" class="border p-2 w-full mb-2" />
+                <input id="editTeacherEmail" type="email" placeholder="Email" class="border p-2 w-full mb-2" />
+                <input id="editTeacherPhone" type="tel" placeholder="Số điện thoại" class="border p-2 w-full mb-2" />
+                <select id="editTeacherFaculty" class="border p-2 w-full mb-2">
+                    <option value="">Chọn khoa</option>
+                </select>
+                <select id="editTeacherDegree" class="border p-2 w-full mb-2">
+                    <option value="">Chọn bằng cấp</option>
+                </select>
+                <div class="flex justify-end gap-2">
+                    <button onclick="TeacherHandlers.update()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
+                    <button onclick="UI.togglePopup('popupEditTeacherForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+                </div>
             </div>
-          </div>
         </div>
       </section>
 
-      <!-- Thống kê -->
       <section id="statistics" class="hidden bg-white p-6 rounded shadow">
         <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📊 Thống kê giáo viên</h2>
         <div class="mb-4">
@@ -202,7 +182,6 @@
           </select>
         </div>
         <p class="font-semibold">Tổng số giáo viên: <span id="teacherCount">0</span></p>
-        <!-- Bảng hiển thị giáo viên được thống kê -->
         <div class="mt-4">
           <h3 class="text-lg font-semibold mb-2">Danh sách giáo viên được thống kê</h3>
           <table class="w-full text-left border">
@@ -225,344 +204,13 @@
     </main>
   </div>
 
-  <script>
-    let degrees = [];
-    let faculties = [];
-    let teachers = [];
-    let editingDegreeId = null;
-    let editingFacultyId = null;
-    let editingTeacherId = null;
-
-    function togglePopup(id) {
-      document.getElementById(id).classList.toggle('hidden');
-    }
-
-    async function fetchData() {
-      try {
-        const [facultiesRes, degreesRes, teachersRes] = await Promise.all([
-          axios.get('http://localhost:3000/api/faculties'),
-          axios.get('http://localhost:3000/api/degrees'),
-          axios.get('http://localhost:3000/api/teachers')
-        ]);
-
-        faculties = facultiesRes.data;
-        degrees = degreesRes.data;
-        teachers = teachersRes.data;
-
-        // Log dữ liệu giáo viên để kiểm tra cấu trúc
-        console.log('Dữ liệu giáo viên từ API:', teachers);
-
-        // Cập nhật dropdown lọc
-        document.getElementById('facultyFilter').innerHTML = '<option value="">Tất cả</option>' +
-          faculties.map(f => `<option value="${f._id}">${f.fullName}</option>`).join('');
-        document.getElementById('degreeFilter').innerHTML = '<option value="">Tất cả</option>' +
-          degrees.map(d => `<option value="${d._id}">${d.fullName}</option>`).join('');
-
-        // Cập nhật dropdown trong form thêm/sửa giáo viên
-        document.getElementById('teacherFaculty').innerHTML = '<option value="">Chọn khoa</option>' +
-          faculties.map(f => `<option value="${f._id}">${f.fullName}</option>`).join('');
-        document.getElementById('teacherDegree').innerHTML = '<option value="">Chọn bằng cấp</option>' +
-          degrees.map(d => `<option value="${d._id}">${d.fullName}</option>`).join('');
-        document.getElementById('editTeacherFaculty').innerHTML = '<option value="">Chọn khoa</option>' +
-          faculties.map(f => `<option value="${f._id}">${f.fullName}</option>`).join('');
-        document.getElementById('editTeacherDegree').innerHTML = '<option value="">Chọn bằng cấp</option>' +
-          degrees.map(d => `<option value="${d._id}">${d.fullName}</option>`).join('');
-
-        // Cập nhật bảng khoa
-        document.getElementById('facultyTable').innerHTML = faculties.map((f, i) => `
-          <tr>
-            <td class="border px-4 py-2">${i + 1}</td>
-            <td class="border px-4 py-2">${f.fullName}</td>
-            <td class="border px-4 py-2">${f.shortName}</td>
-            <td class="border px-4 py-2">${f.description || ''}</td>
-            <td class="border px-4 py-2 space-x-2">
-              <button onclick="editFaculty('${f._id}')" class="text-blue-500 hover:underline">✏️</button>
-              <button onclick="deleteFaculty('${f._id}')" class="text-red-500 hover:underline">🗑️</button>
-            </td>
-          </tr>`).join('');
-
-        // Cập nhật bảng bằng cấp
-        document.getElementById('degreeTable').innerHTML = degrees.map((d, i) => `
-          <tr>
-            <td class="border px-4 py-2">${i + 1}</td>
-            <td class="border px-4 py-2">${d.fullName}</td>
-            <td class="border px-4 py-2">${d.shortName}</td>
-            <td class="border px-4 py-2 space-x-2">
-              <button onclick="editDegree('${d._id}')" class="text-blue-500 hover:underline">✏️</button>
-              <button onclick="deleteDegree('${d._id}')" class="text-red-500 hover:underline">🗑️</button>
-            </td>
-          </tr>`).join('');
-
-        // Cập nhật bảng giáo viên
-        document.getElementById('teacherTable').innerHTML = teachers.map((t, i) => {
-          let formattedBirthDate = '';
-          if (t.birthDate) {
-            const birthDate = new Date(t.birthDate);
-            formattedBirthDate = !isNaN(birthDate) ? birthDate.toLocaleDateString('vi-VN') : '';
-          }
-          return `
-            <tr>
-              <td class="border px-4 py-2">${i + 1}</td>
-              <td class="border px-4 py-2">${t.code || ''}</td>
-              <td class="border px-4 py-2">${t.name || ''}</td>
-              <td class="border px-4 py-2">${formattedBirthDate}</td>
-              <td class="border px-4 py-2">${t.email || ''}</td>
-              <td class="border px-4 py-2">${t.phone || ''}</td>
-              <td class="border px-4 py-2">${t.facultyId?.fullName || ''}</td>
-              <td class="border px-4 py-2">${t.degreeId?.fullName || ''}</td>
-              <td class="border px-4 py-2 space-x-2">
-                <button onclick="editTeacher('${t._id}')" class="text-blue-500 hover:underline">✏️</button>
-                <button onclick="deleteTeacher('${t._id}')" class="text-red-500 hover:underline">🗑️</button>
-              </td>
-            </tr>`;
-        }).join('');
-
-        // Cập nhật thống kê
-        updateCount();
-      } catch (err) {
-        console.error('Lỗi khi lấy dữ liệu:', err);
-        alert('Không thể tải dữ liệu. Vui lòng kiểm tra kết nối API.');
-      }
-    }
-
-    function showSection(id) {
-      ['welcome', 'degrees', 'faculties', 'teachers', 'statistics'].forEach(sectionId => {
-        document.getElementById(sectionId).classList.add('hidden');
-      });
-      document.getElementById(id).classList.remove('hidden');
-      if (id !== 'welcome') {
-        fetchData();
-      }
-    }
-
-    // Degree Functions
-    async function addDegree() {
-      const fullName = document.getElementById('degreeFullName').value;
-      const shortName = document.getElementById('degreeShortName').value;
-      if (!fullName || !shortName) return alert('Vui lòng nhập đầy đủ thông tin');
-      try {
-        await axios.post('http://localhost:3000/api/degrees', { fullName, shortName });
-        document.getElementById('degreeFullName').value = '';
-        document.getElementById('degreeShortName').value = '';
-        togglePopup('popupForm');
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi thêm bằng cấp');
-        console.error(err);
-      }
-    }
-
-    async function deleteDegree(id) {
-      if (!confirm('Bạn có chắc muốn xóa?')) return;
-      try {
-        await axios.delete(`http://localhost:3000/api/degrees/${id}`);
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi xóa bằng cấp');
-        console.error(err);
-      }
-    }
-
-    function editDegree(id) {
-      const degree = degrees.find(d => d._id === id);
-      if (!degree) return;
-      editingDegreeId = id;
-      document.getElementById('editDegreeFullName').value = degree.fullName;
-      document.getElementById('editDegreeShortName').value = degree.shortName;
-      togglePopup('popupEditForm');
-    }
-
-    async function updateDegree() {
-      const fullName = document.getElementById('editDegreeFullName').value;
-      const shortName = document.getElementById('editDegreeShortName').value;
-      try {
-        await axios.put(`http://localhost:3000/api/degrees/${editingDegreeId}`, { fullName, shortName });
-        togglePopup('popupEditForm');
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi cập nhật bằng cấp');
-        console.error(err);
-      }
-    }
-
-    // Faculty Functions
-    async function addFaculty() {
-      const fullName = document.getElementById('facultyFullName').value;
-      const shortName = document.getElementById('facultyShortName').value;
-      const description = document.getElementById('facultyDescription').value;
-      if (!fullName || !shortName) return alert('Vui lòng nhập đầy đủ Tên đầy đủ và Tên viết tắt');
-      try {
-        await axios.post('http://localhost:3000/api/faculties', { fullName, shortName, description });
-        document.getElementById('facultyFullName').value = '';
-        document.getElementById('facultyShortName').value = '';
-        document.getElementById('facultyDescription').value = '';
-        togglePopup('popupFacultyForm');
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi thêm khoa');
-        console.error(err);
-      }
-    }
-
-    async function deleteFaculty(id) {
-      if (!confirm('Bạn có chắc muốn xóa?')) return;
-      try {
-        await axios.delete(`http://localhost:3000/api/faculties/${id}`);
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi xóa khoa');
-        console.error(err);
-      }
-    }
-
-    function editFaculty(id) {
-      const faculty = faculties.find(f => f._id === id);
-      if (!faculty) return;
-      editingFacultyId = id;
-      document.getElementById('editFacultyFullName').value = faculty.fullName;
-      document.getElementById('editFacultyShortName').value = faculty.shortName;
-      document.getElementById('editFacultyDescription').value = faculty.description || '';
-      togglePopup('popupEditFacultyForm');
-    }
-
-    async function updateFaculty() {
-      const fullName = document.getElementById('editFacultyFullName').value;
-      const shortName = document.getElementById('editFacultyShortName').value;
-      const description = document.getElementById('editFacultyDescription').value;
-      try {
-        await axios.put(`http://localhost:3000/api/faculties/${editingFacultyId}`, { fullName, shortName, description });
-        togglePopup('popupEditFacultyForm');
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi cập nhật khoa');
-        console.error(err);
-      }
-    }
-
-    // Teacher Functions
-    async function addTeacher() {
-      const code = document.getElementById('teacherCode').value;
-      const name = document.getElementById('teacherName').value;
-      const birthDate = document.getElementById('teacherBirthDate').value;
-      const email = document.getElementById('teacherEmail').value;
-      const phone = document.getElementById('teacherPhone').value;
-      const facultyId = document.getElementById('teacherFaculty').value;
-      const degreeId = document.getElementById('teacherDegree').value;
-      if (!code || !name || !birthDate || !facultyId || !degreeId) {
-        return alert('Vui lòng nhập đầy đủ thông tin (Mã GV, Họ tên, Ngày Sinh, Khoa, Bằng cấp)');
-      }
-      try {
-        console.log('Dữ liệu gửi lên API:', { code, name, birthDate, email, phone, facultyId, degreeId });
-        await axios.post('http://localhost:3000/api/teachers', { code, name, birthDate, email, phone, facultyId, degreeId });
-        document.getElementById('teacherCode').value = '';
-        document.getElementById('teacherName').value = '';
-        document.getElementById('teacherBirthDate').value = '';
-        document.getElementById('teacherEmail').value = '';
-        document.getElementById('teacherPhone').value = '';
-        document.getElementById('teacherFaculty').value = '';
-        document.getElementById('teacherDegree').value = '';
-        togglePopup('popupTeacherForm');
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi thêm giáo viên: ' + (err.response?.data?.message || err.message));
-        console.error(err);
-      }
-    }
-
-    async function deleteTeacher(id) {
-      if (!confirm('Bạn có chắc muốn xóa?')) return;
-      try {
-        await axios.delete(`http://localhost:3000/api/teachers/${id}`);
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi xóa giáo viên');
-        console.error(err);
-      }
-    }
-
-    function editTeacher(id) {
-      const teacher = teachers.find(t => t._id === id);
-      if (!teacher) {
-        alert('Không tìm thấy giáo viên');
-        return;
-      }
-      editingTeacherId = id;
-      document.getElementById('editTeacherCode').value = teacher.code || '';
-      document.getElementById('editTeacherName').value = teacher.name || '';
-      document.getElementById('editTeacherBirthDate').value = teacher.birthDate ? new Date(teacher.birthDate).toISOString().split('T')[0] : '';
-      document.getElementById('editTeacherEmail').value = teacher.email || '';
-      document.getElementById('editTeacherPhone').value = teacher.phone || '';
-      document.getElementById('editTeacherFaculty').value = teacher.facultyId?._id || '';
-      document.getElementById('editTeacherDegree').value = teacher.degreeId?._id || '';
-      togglePopup('popupEditTeacherForm');
-    }
-
-    async function updateTeacher() {
-      const code = document.getElementById('editTeacherCode').value;
-      const name = document.getElementById('editTeacherName').value;
-      const birthDate = document.getElementById('editTeacherBirthDate').value;
-      const email = document.getElementById('editTeacherEmail').value;
-      const phone = document.getElementById('editTeacherPhone').value;
-      const facultyId = document.getElementById('editTeacherFaculty').value;
-      const degreeId = document.getElementById('editTeacherDegree').value;
-      if (!code || !name || !birthDate || !facultyId || !degreeId) {
-        return alert('Vui lòng nhập đầy đủ thông tin (Mã GV, Họ tên, Ngày Sinh, Khoa, Bằng cấp)');
-      }
-      try {
-        console.log('Dữ liệu cập nhật gửi lên API:', { code, name, birthDate, email, phone, facultyId, degreeId });
-        await axios.put(`http://localhost:3000/api/teachers/${editingTeacherId}`, { code, name, birthDate, email, phone, facultyId, degreeId });
-        togglePopup('popupEditTeacherForm');
-        fetchData();
-      } catch (err) {
-        alert('Lỗi khi cập nhật giáo viên: ' + (err.response?.data?.message || err.message));
-        console.error(err);
-      }
-    }
-
-    function updateCount() {
-      const facultyFilter = document.getElementById('facultyFilter');
-      const degreeFilter = document.getElementById('degreeFilter');
-      const teacherCount = document.getElementById('teacherCount');
-      const filteredTeacherTable = document.getElementById('filteredTeacherTable');
-
-      const selectedFaculty = facultyFilter.value;
-      const selectedDegree = degreeFilter.value;
-      const filtered = teachers.filter(t => {
-        const matchFaculty = !selectedFaculty || t.facultyId?._id === selectedFaculty;
-        const matchDegree = !selectedDegree || t.degreeId?._id === selectedDegree;
-        return matchFaculty && matchDegree;
-      });
-
-      // Cập nhật tổng số giáo viên
-      teacherCount.textContent = filtered.length;
-
-      // Cập nhật bảng danh sách giáo viên được lọc
-      filteredTeacherTable.innerHTML = filtered.map((t, i) => {
-        let formattedBirthDate = '';
-        if (t.birthDate) {
-          const birthDate = new Date(t.birthDate);
-          formattedBirthDate = !isNaN(birthDate) ? birthDate.toLocaleDateString('vi-VN') : '';
-        }
-        return `
-          <tr>
-            <td class="border px-4 py-2">${i + 1}</td>
-            <td class="border px-4 py-2">${t.code || ''}</td>
-            <td class="border px-4 py-2">${t.name || ''}</td>
-            <td class="border px-4 py-2">${formattedBirthDate}</td>
-            <td class="border px-4 py-2">${t.email || ''}</td>
-            <td class="border px-4 py-2">${t.phone || ''}</td>
-            <td class="border px-4 py-2">${t.facultyId?.fullName || ''}</td>
-            <td class="border px-4 py-2">${t.degreeId?.fullName || ''}</td>
-          </tr>`;
-      }).join('');
-    }
-
-    // Thêm event listener cho dropdown
-    document.getElementById('facultyFilter').addEventListener('change', updateCount);
-    document.getElementById('degreeFilter').addEventListener('change', updateCount);
-
-    fetchData();
-    showSection('welcome');
-  </script>
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/degrees.js"></script>
+  <script src="js/faculties.js"></script>
+  <script src="js/teachers.js"></script>
+  <script src="js/statistics.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
