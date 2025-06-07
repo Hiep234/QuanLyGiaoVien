@@ -1,216 +1,1110 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quản lý giáo viên</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script defer src="https://unpkg.com/axios/dist/axios.min.js"></script>
-  </head>
-<body class="bg-gray-100">
-  <div class="flex min-h-screen">
-    <aside class="w-64 bg-slate-800 text-white p-6">
-      <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
-        <span>📚</span> Chức năng
-      </h2>
-      <nav class="flex flex-col gap-4">
-        <button onclick="handleShowSection('degrees')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Bằng cấp</button>
-        <button onclick="handleShowSection('faculties')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Khoa</button>
-        <button onclick="handleShowSection('teachers')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Giáo viên</button>
-        <button onclick="handleShowSection('statistics')" class="bg-blue-500 hover:bg-blue-600 rounded py-2 px-4 text-center">Thống kê</button>
-      </nav>
-    </aside>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Giáo viên</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.5.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-64 bg-gray-800 text-white shadow-lg custom-scrollbar" style="overflow-y: auto;">
+            <div class="p-4">
+                <h2 class="text-xl font-bold mb-6">Quản lý Giáo viên</h2>
+                <nav>
+                    <!-- Welcome Section -->
+                    <div onclick="setActive(this); handleShowSection('welcome')" class="sidebar-item mb-2">
+                        <i class="fas fa-home menu-icon"></i>
+                        <span>Trang chủ</span>
+                    </div>
 
-    <main class="flex-1 p-8 space-y-8">
-      <section id="welcome" class="bg-white p-6 rounded shadow">
-        <h2 class="text-3xl font-bold mb-6 text-center">🎉 Chào mừng đến với Quản lý Giáo viên!</h2>
-        <p class="text-center mb-4">Vui lòng chọn một chức năng từ menu bên trái để bắt đầu.</p>
-      </section>
+                    <!-- Teacher Management Section -->
+                    <div onclick="toggleSubmenu('quanLyGiaoVienSubmenu', this)" class="sidebar-item mb-2">
+                        <i class="fas fa-users menu-icon"></i>
+                        <span>Quản lý Giáo viên</span>
+                        <i class="fas fa-chevron-right arrow-icon"></i>
+                    </div>
+                    <div id="quanLyGiaoVienSubmenu" class="submenu">
+                        <a onclick="setActive(this, 'quanLyGiaoVienSubmenu'); handleShowSection('degrees')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-graduation-cap menu-icon"></i>
+                            <span>Bằng cấp</span>
+                        </a>
+                        <a onclick="setActive(this, 'quanLyGiaoVienSubmenu'); handleShowSection('faculties')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-building menu-icon"></i>
+                            <span>Khoa</span>
+                        </a>
+                        <a onclick="setActive(this, 'quanLyGiaoVienSubmenu'); handleShowSection('teachers')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-user-tie menu-icon"></i>
+                            <span>Giáo viên</span>
+                        </a>
+                        <a onclick="setActive(this, 'quanLyGiaoVienSubmenu'); handleShowSection('statistics')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-chart-bar menu-icon"></i>
+                            <span>Thống kê</span>
+                        </a>
+                    </div>
 
-      <section id="degrees" class="hidden bg-white p-6 rounded shadow relative">
-        <h2 class="text-xl font-bold mb-4">🎓 Danh sách bằng cấp</h2>
-        <button onclick="UI.togglePopup('popupForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
-        <table class="w-full text-left border">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border px-4 py-2">STT</th>
-              <th class="border px-4 py-2">Tên đầy đủ</th>
-              <th class="border px-4 py-2">Tên viết tắt</th>
-              <th class="border px-4 py-2">Hành động</th>
-            </tr>
-          </thead>
-          <tbody id="degreeTable"></tbody>
-        </table>
-        <div id="popupForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-          <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-            <h3 class="text-lg font-semibold mb-2">Thêm bằng cấp</h3>
-            <input id="degreeFullName" type="text" placeholder="Tên đầy đủ" class="border p-2 w-full mb-2" />
-            <input id="degreeShortName" type="text" placeholder="Tên viết tắt" class="border p-2 w-full mb-2" />
-            <div class="flex justify-end gap-2">
-              <button onclick="DegreeHandlers.add()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
-              <button onclick="UI.togglePopup('popupForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+                    <!-- Course Management Section -->
+                    <div onclick="toggleSubmenu('quanLyLopHocSubmenu', this)" class="sidebar-item mb-2">
+                        <i class="fas fa-book menu-icon"></i>
+                        <span>Quản lý Lớp học</span>
+                        <i class="fas fa-chevron-right arrow-icon"></i>
+                    </div>
+                    <div id="quanLyLopHocSubmenu" class="submenu">
+                        <a onclick="setActive(this, 'quanLyLopHocSubmenu'); handleShowSection('courses')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-book-open menu-icon"></i>
+                            <span>Học phần</span>
+                        </a>
+                        <a onclick="setActive(this, 'quanLyLopHocSubmenu'); handleShowSection('semesters')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-calendar menu-icon"></i>
+                            <span>Kì học</span>
+                        </a>
+                        <a onclick="setActive(this, 'quanLyLopHocSubmenu'); handleShowSection('classes')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-chalkboard-teacher menu-icon"></i>
+                            <span>Lớp học phần</span>
+                        </a>
+                        <a onclick="setActive(this, 'quanLyLopHocSubmenu'); handleShowSection('assignments')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-tasks menu-icon"></i>
+                            <span>Phân công GV</span>
+                        </a>
+                        <a onclick="setActive(this, 'quanLyLopHocSubmenu'); handleShowSection('statisticsLopMo')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-chart-line menu-icon"></i>
+                            <span>Thống kê lớp mở</span>
+                        </a>
+                    </div>
+
+                    <!-- Salary Calculation Section -->
+                    <div onclick="toggleSubmenu('tinhTienDaySubmenu', this)" class="sidebar-item mb-2">
+                        <i class="fas fa-calculator menu-icon"></i>
+                        <span>Tính tiền dạy</span>
+                        <i class="fas fa-chevron-right arrow-icon"></i>
+                    </div>
+                    <div id="tinhTienDaySubmenu" class="submenu">
+                        <a onclick="setActive(this, 'tinhTienDaySubmenu'); handleShowSection('salary-rates')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-money-bill menu-icon"></i>
+                            <span>Định mức tiền/tiết</span>
+                        </a>
+                        <a onclick="setActive(this, 'tinhTienDaySubmenu'); handleShowSection('teacher-coefficients')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-user-graduate menu-icon"></i>
+                            <span>Hệ số giáo viên</span>
+                        </a>
+                        <a onclick="setActive(this, 'tinhTienDaySubmenu'); handleShowSection('class-coefficients')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-users menu-icon"></i>
+                            <span>Hệ số lớp</span>
+                        </a>
+                        <a onclick="setActive(this, 'tinhTienDaySubmenu'); handleShowSection('salary-calculation')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-calculator menu-icon"></i>
+                            <span>Tính tiền dạy</span>
+                        </a>
+                    </div>
+                </nav>
             </div>
-          </div>
         </div>
-        <div id="popupEditForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-          <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-            <h3 class="text-lg font-semibold mb-2">Sửa bằng cấp</h3>
-            <input id="editDegreeFullName" type="text" class="border p-2 w-full mb-2" />
-            <input id="editDegreeShortName" type="text" class="border p-2 w-full mb-2" />
-            <div class="flex justify-end gap-2">
-              <button onclick="DegreeHandlers.update()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
-              <button onclick="UI.togglePopup('popupEditForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <section id="faculties" class="hidden bg-white p-6 rounded shadow relative">
-        <h2 class="text-xl font-bold mb-4">🏛️ Danh sách khoa</h2>
-        <button onclick="UI.togglePopup('popupFacultyForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
-        <table class="w-full text-left border">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border px-4 py-2">STT</th>
-              <th class="border px-4 py-2">Tên đầy đủ</th>
-              <th class="border px-4 py-2">Tên viết tắt</th>
-              <th class="border px-4 py-2">Mô tả</th>
-              <th class="border px-4 py-2">Hành động</th>
-            </tr>
-          </thead>
-          <tbody id="facultyTable"></tbody>
-        </table>
-        <div id="popupFacultyForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-            <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-                <h3 class="text-lg font-semibold mb-2">Thêm khoa</h3>
-                <input id="facultyFullName" type="text" placeholder="Tên đầy đủ" class="border p-2 w-full mb-2" />
-                <input id="facultyShortName" type="text" placeholder="Tên viết tắt" class="border p-2 w-full mb-2" />
-                <textarea id="facultyDescription" placeholder="Mô tả" class="border p-2 w-full mb-2" rows="4"></textarea>
-                <div class="flex justify-end gap-2">
-                    <button onclick="FacultyHandlers.add()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
-                    <button onclick="UI.togglePopup('popupFacultyForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Welcome Section -->
+            <div id="welcome" class="p-8">
+                <h1 class="text-3xl font-bold mb-4">Chào mừng đến với hệ thống quản lý giáo viên</h1>
+                <p class="text-gray-600">Chọn một mục từ menu bên trái để bắt đầu.</p>
+            </div>
+
+            <!-- Degrees Section -->
+            <div id="degrees" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Bằng cấp</h1>
+                    <button onclick="togglePopup('popupFormDegreeAdd')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Thêm bằng cấp</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Tên đầy đủ</th>
+                                <th class="border px-4 py-2">Tên viết tắt</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="degreeTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Faculties Section -->
+            <div id="faculties" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Khoa</h1>
+                    <button onclick="togglePopup('popupFacultyFormAdd')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Thêm khoa</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Tên đầy đủ</th>
+                                <th class="border px-4 py-2">Tên viết tắt</th>
+                                <th class="border px-4 py-2">Mô tả</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="facultyTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Teachers Section -->
+            <div id="teachers" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Giáo viên</h1>
+                    <button onclick="togglePopup('popupTeacherFormAdd')" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Thêm giáo viên</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Mã GV</th>
+                                <th class="border px-4 py-2">Tên</th>
+                                <th class="border px-4 py-2">Ngày sinh</th>
+                                <th class="border px-4 py-2">Email</th>
+                                <th class="border px-4 py-2">Điện thoại</th>
+                                <th class="border px-4 py-2">Khoa</th>
+                                <th class="border px-4 py-2">Bằng cấp</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacherTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Statistics Section -->
+            <div id="statistics" class="p-8 hidden">
+                <h1 class="text-3xl font-bold mb-6">Thống kê</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block mb-2">Lọc theo khoa:</label>
+                        <select id="facultyFilter" class="w-full p-2 border rounded"></select>
+                    </div>
+                    <div>
+                        <label class="block mb-2">Lọc theo bằng cấp:</label>
+                        <select id="degreeFilter" class="w-full p-2 border rounded"></select>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <h2 class="text-xl font-bold mb-4">Tổng số giáo viên: <span id="teacherCount">0</span></h2>
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Mã GV</th>
+                                <th class="border px-4 py-2">Tên</th>
+                                <th class="border px-4 py-2">Ngày sinh</th>
+                                <th class="border px-4 py-2">Email</th>
+                                <th class="border px-4 py-2">Điện thoại</th>
+                                <th class="border px-4 py-2">Khoa</th>
+                                <th class="border px-4 py-2">Bằng cấp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="filteredTeacherTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Courses Section -->
+            <div id="courses-section" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Học phần</h1>
+                    <button onclick="CourseHandlers.showAddForm()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Thêm học phần</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Mã HP</th>
+                                <th class="border px-4 py-2">Tên học phần</th>
+                                <th class="border px-4 py-2">Số tín chỉ</th>
+                                <th class="border px-4 py-2">Hệ số</th>
+                                <th class="border px-4 py-2">Số tiết</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courseTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add Course Form -->
+            <div id="add-course-form" class="p-8 hidden">
+                <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+                    <h1 id="courseFormTitle" class="text-3xl font-bold mb-6">Thêm học phần mới</h1>
+                    <form onsubmit="event.preventDefault(); CourseHandlers.saveOrUpdate();">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block mb-2">Mã học phần*:</label>
+                                <input type="text" id="courseCodeFormInput" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Tên học phần*:</label>
+                                <input type="text" id="courseNameFormInput" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Số tín chỉ*:</label>
+                                <input type="number" id="courseCreditsFormInput" class="w-full p-2 border rounded" min="1" required>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Hệ số:</label>
+                                <input type="number" id="courseCoefficientFormInput" class="w-full p-2 border rounded" min="0" step="0.1" value="1">
+                            </div>
+                            <div>
+                                <label class="block mb-2">Số tiết*:</label>
+                                <input type="number" id="coursePeriodsFormInput" class="w-full p-2 border rounded" min="1" required>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block mb-2">Mô tả:</label>
+                            <textarea id="courseDescriptionFormInput" class="w-full p-2 border rounded" rows="3"></textarea>
+                        </div>
+                        <div class="flex gap-4 mt-6">
+                            <button type="submit" id="courseFormSubmitButton" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">Lưu lại</button>
+                            <button type="button" onclick="CourseHandlers.hideForm()" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">Hủy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Semesters Section -->
+            <div id="semesters-section" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Kì học</h1>
+                    <button onclick="SemesterHandlers.showAddForm()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Thêm kì học</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Tên kì</th>
+                                <th class="border px-4 py-2">Năm học</th>
+                                <th class="border px-4 py-2">Ngày bắt đầu</th>
+                                <th class="border px-4 py-2">Ngày kết thúc</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="semesterTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add Semester Form -->
+            <div id="add-semester-form" class="p-8 hidden">
+                <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+                    <h1 id="semesterFormTitle" class="text-3xl font-bold mb-6">Thêm kì học</h1>
+                    <form onsubmit="event.preventDefault(); SemesterHandlers.saveOrUpdate();">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block mb-2">Tên kì*:</label>
+                                <input type="text" id="semesterNameFormInput" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Năm học*:</label>
+                                <input type="number" id="semesterYearFormInput" class="w-full p-2 border rounded" min="2020" max="2050" required>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Ngày bắt đầu*:</label>
+                                <input type="date" id="semesterStartDateFormInput" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Ngày kết thúc*:</label>
+                                <input type="date" id="semesterEndDateFormInput" class="w-full p-2 border rounded" required>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 mt-6">
+                            <button type="submit" id="semesterFormSubmitButton" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">Lưu</button>
+                            <button type="button" onclick="SemesterHandlers.hideForm()" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">Hủy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Classes Section -->
+            <div id="classes-section" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Lớp học phần</h1>
+                    <div class="flex gap-2">
+                        <button onclick="ClassHandlers.showBulkCreateForm()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">📋 Mở hàng loạt</button>
+                        <button onclick="ClassHandlers.showAddForm()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">➕ Thêm lớp học phần</button>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block mb-2">Lọc theo học phần:</label>
+                            <select id="classFilterCourse" class="w-full p-2 border rounded"></select>
+                        </div>
+                        <div>
+                            <label class="block mb-2">Lọc theo kì học:</label>
+                            <select id="classFilterSemester" class="w-full p-2 border rounded"></select>
+                        </div>
+                    </div>
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Mã lớp</th>
+                                <th class="border px-4 py-2">Tên lớp</th>
+                                <th class="border px-4 py-2">Học phần</th>
+                                <th class="border px-4 py-2">Kì học</th>
+                                <th class="border px-4 py-2">Số sinh viên</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add Class Form -->
+            <div id="add-class-form" class="p-8 hidden">
+                <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+                    <h1 id="classFormTitle" class="text-3xl font-bold mb-6">Thêm lớp học phần</h1>
+                    <form onsubmit="event.preventDefault(); ClassHandlers.saveOrUpdate();">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block mb-2">Mã lớp*:</label>
+                                <input type="text" id="classCodeFormInput" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Tên lớp*:</label>
+                                <input type="text" id="classNameFormInput" class="w-full p-2 border rounded" required>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Học phần*:</label>
+                                <select id="classCourseFormInput" class="w-full p-2 border rounded" required></select>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Kì học*:</label>
+                                <select id="classSemesterFormInput" class="w-full p-2 border rounded" required></select>
+                            </div>
+                            <div>
+                                <label class="block mb-2">Số sinh viên:</label>
+                                <input type="number" id="classStudentCountFormInput" class="w-full p-2 border rounded" min="0">
+                            </div>
+                        </div>
+                        <div class="flex gap-4 mt-6">
+                            <button type="submit" id="classFormSubmitButton" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">Lưu</button>
+                            <button type="button" onclick="ClassHandlers.hideForm()" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">Hủy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Bulk Create Classes Form -->
+            <div id="bulk-create-classes-form" class="p-8 hidden">
+                <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
+                    <h1 class="text-3xl font-bold mb-6">📋 Mở hàng loạt lớp học phần</h1>
+                    <form onsubmit="event.preventDefault(); ClassHandlers.bulkCreate();">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Basic Info -->
+                            <div class="space-y-4">
+                                <h3 class="text-lg font-semibold text-gray-700">Thông tin cơ bản</h3>
+                                
+                                <div>
+                                    <label class="block mb-2">Học phần*:</label>
+                                    <select id="bulkClassCourseFormInput" class="w-full p-2 border rounded" required></select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block mb-2">Kì học*:</label>
+                                    <select id="bulkClassSemesterFormInput" class="w-full p-2 border rounded" required></select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block mb-2">Số sinh viên mỗi lớp:</label>
+                                    <input type="number" id="bulkClassStudentCountFormInput" class="w-full p-2 border rounded" min="0" placeholder="40">
+                                </div>
+                            </div>
+
+                            <!-- Class Generation -->
+                            <div class="space-y-4">
+                                <h3 class="text-lg font-semibold text-gray-700">Cấu hình tạo lớp</h3>
+                                
+                                <div>
+                                    <label class="block mb-2">Số lượng lớp*:</label>
+                                    <input type="number" id="bulkClassCountInput" class="w-full p-2 border rounded" min="1" max="50" value="5" required 
+                                           onchange="ClassHandlers.updateBulkPreview()">
+                                </div>
+                                
+                                <div>
+                                    <label class="block mb-2">Định dạng mã lớp*:</label>
+                                    <select id="bulkClassCodeFormatInput" class="w-full p-2 border rounded" onchange="ClassHandlers.updateBulkPreview()">
+                                        <option value="N{##}">N01, N02, N03... (N{##})</option>
+                                        <option value="L{##}">L01, L02, L03... (L{##})</option>
+                                        <option value="C{##}">C01, C02, C03... (C{##})</option>
+                                        <option value="custom">Tùy chỉnh</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="customCodeFormatDiv" class="hidden">
+                                    <label class="block mb-2">Định dạng tùy chỉnh:</label>
+                                    <input type="text" id="customCodeFormatInput" class="w-full p-2 border rounded" 
+                                           placeholder="ABC{##}" onchange="ClassHandlers.updateBulkPreview()">
+                                    <small class="text-gray-500">Sử dụng {##} cho số thứ tự (01, 02, ...) hoặc {#} cho số đơn (1, 2, ...)</small>
+                                </div>
+                                
+                                <div>
+                                    <label class="block mb-2">Tên lớp:</label>
+                                    <select id="bulkClassNameFormatInput" class="w-full p-2 border rounded" onchange="ClassHandlers.updateBulkPreview()">
+                                        <option value="same">Giống mã lớp</option>
+                                        <option value="course_code">Theo mã học phần + số thứ tự</option>
+                                        <option value="custom">Tùy chỉnh</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="customNameFormatDiv" class="hidden">
+                                    <label class="block mb-2">Tên lớp tùy chỉnh:</label>
+                                    <input type="text" id="customNameFormatInput" class="w-full p-2 border rounded" 
+                                           placeholder="Lớp {##}" onchange="ClassHandlers.updateBulkPreview()">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Preview -->
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-3">👀 Xem trước</h3>
+                            <div class="bg-gray-50 p-4 rounded border max-h-64 overflow-y-auto">
+                                <div id="bulkCreatePreview" class="text-sm">
+                                    <!-- Preview will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex gap-4 mt-6">
+                            <button type="submit" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600">
+                                📋 Tạo <span id="bulkCreateCount">5</span> lớp
+                            </button>
+                            <button type="button" onclick="ClassHandlers.hideBulkCreateForm()" class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">Hủy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Assignments Section -->
+            <div id="assignments-section" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Phân công Giáo viên</h1>
+                    <button onclick="AssignmentHandlers.saveAllAssignments()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">💾 Lưu tất cả phân công</button>
+                </div>
+                
+                <!-- Filters -->
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block mb-2">Lọc theo kì học:</label>
+                            <select id="assignmentSemesterFilter" onchange="AssignmentHandlers.filterClasses()" class="w-full p-2 border rounded"></select>
+                        </div>
+                        <div>
+                            <label class="block mb-2">Lọc theo học phần:</label>
+                            <select id="assignmentCourseFilter" onchange="AssignmentHandlers.filterClasses()" class="w-full p-2 border rounded"></select>
+                        </div>
+                        <div>
+                            <label class="block mb-2">Trạng thái:</label>
+                            <select id="assignmentStatusFilter" onchange="AssignmentHandlers.filterClasses()" class="w-full p-2 border rounded">
+                                <option value="">Tất cả</option>
+                                <option value="assigned">Đã phân công</option>
+                                <option value="unassigned">Chưa phân công</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Class Assignment Table -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold mb-4">Danh sách lớp học phần</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse border border-gray-300">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border px-4 py-2">STT</th>
+                                    <th class="border px-4 py-2">Mã lớp</th>
+                                    <th class="border px-4 py-2">Tên lớp</th>
+                                    <th class="border px-4 py-2">Học phần</th>
+                                    <th class="border px-4 py-2">Kì học</th>
+                                    <th class="border px-4 py-2">Số SV</th>
+                                    <th class="border px-4 py-2 w-64">Phân công giáo viên</th>
+                                    <th class="border px-4 py-2">Ghi chú</th>
+                                    <th class="border px-4 py-2">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="classAssignmentTable"></tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Summary -->
+                    <div class="mt-4 p-4 bg-gray-50 rounded">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                            <div>
+                                <span class="font-bold text-lg" id="totalClassesCount">0</span>
+                                <p class="text-gray-600">Tổng số lớp</p>
+                            </div>
+                            <div>
+                                <span class="font-bold text-lg text-green-600" id="assignedClassesCount">0</span>
+                                <p class="text-gray-600">Đã phân công</p>
+                            </div>
+                            <div>
+                                <span class="font-bold text-lg text-red-600" id="unassignedClassesCount">0</span>
+                                <p class="text-gray-600">Chưa phân công</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- Statistics Section -->
+            <div id="statisticsLopMo-section" class="p-8 hidden">
+                <h1 class="text-3xl font-bold mb-6">Thống kê lớp mở</h1>
+                
+                <!-- Filters -->
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block mb-2">Lọc theo năm:</label>
+                            <select id="statsLopMoYearFilter" onchange="StatisticsLopMoHandlers.filterStatistics()" class="w-full p-2 border rounded"></select>
+                        </div>
+                        <div>
+                            <label class="block mb-2">Lọc theo kì:</label>
+                            <select id="statsLopMoSemesterFilter" onchange="StatisticsLopMoHandlers.filterStatistics()" class="w-full p-2 border rounded"></select>
+                        </div>
+                        <div>
+                            <label class="block mb-2">Lọc theo học phần:</label>
+                            <select id="statsLopMoCourseFilter" onchange="StatisticsLopMoHandlers.filterStatistics()" class="w-full p-2 border rounded"></select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-blue-500 text-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-bold">Tổng số lớp</h3>
+                        <p class="text-3xl font-bold" id="totalClasses">0</p>
+                    </div>
+                    <div class="bg-green-500 text-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-bold">Tổng số học phần</h3>
+                        <p class="text-3xl font-bold" id="totalCourses">0</p>
+                    </div>
+                    <div class="bg-orange-500 text-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-lg font-bold">Tổng số sinh viên</h3>
+                        <p class="text-3xl font-bold" id="totalStudents">0</p>
+                    </div>
+                </div>
+
+                <!-- Chart -->
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <canvas id="statsChart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Detail Table -->
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <h2 class="text-xl font-bold mb-4">Chi tiết theo học phần</h2>
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Học phần</th>
+                                <th class="border px-4 py-2">Số lớp</th>
+                                <th class="border px-4 py-2">Tổng sinh viên</th>
+                                <th class="border px-4 py-2">Kì học</th>
+                            </tr>
+                        </thead>
+                        <tbody id="statsDetailTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- UC3.1: Salary Rates Section -->
+            <div id="salary-rates" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Định mức tiền/tiết</h1>
+                    <button onclick="SalaryHandlers.showAddRateForm()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Thêm định mức</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Tên định mức</th>
+                                <th class="border px-4 py-2">Số tiền/tiết</th>
+                                <th class="border px-4 py-2">Mô tả</th>
+                                <th class="border px-4 py-2">Trạng thái</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salaryRateTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- UC3.2: Teacher Coefficients Section -->
+            <div id="teacher-coefficients" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Hệ số giáo viên</h1>
+                    <button onclick="SalaryHandlers.showAddTeacherCoefficientForm()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm hệ số</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Bằng cấp</th>
+                                <th class="border px-4 py-2">Hệ số</th>
+                                <th class="border px-4 py-2">Mô tả</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacherCoefficientTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- UC3.3: Class Coefficients Section -->
+            <div id="class-coefficients" class="p-8 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-3xl font-bold">Quản lý Hệ số lớp</h1>
+                    <button onclick="SalaryHandlers.showAddClassCoefficientForm()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Thêm hệ số</button>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-md">
+                    <table class="w-full border-collapse border border-gray-300">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Từ (SV)</th>
+                                <th class="border px-4 py-2">Đến (SV)</th>
+                                <th class="border px-4 py-2">Hệ số</th>
+                                <th class="border px-4 py-2">Mô tả</th>
+                                <th class="border px-4 py-2">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="classCoefficientTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- UC3.4: Salary Calculation Section -->
+            <div id="salary-calculation" class="p-8 hidden">
+                <h1 class="text-3xl font-bold mb-6">Tính tiền dạy cho giáo viên</h1>
+                
+                <!-- Filters -->
+                <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block mb-2">Chọn kì học:</label>
+                            <select id="salaryCalculationSemesterFilter" class="w-full p-2 border rounded" onchange="SalaryHandlers.loadTeachersInSemester()">
+                                <option value="">-- Chọn kì học --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-2">Chọn giáo viên:</label>
+                            <select id="salaryCalculationTeacherFilter" class="w-full p-2 border rounded">
+                                <option value="">-- Chọn giáo viên --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button onclick="SalaryHandlers.calculateSalary()" class="bg-red-500 text-white px-6 py-2 rounded hover:bg-red-600">
+                            <i class="fas fa-calculator mr-2"></i>Tính tiền dạy
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Results -->
+                <div id="salaryResults" class="hidden">
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="bg-blue-500 text-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-bold">Số lớp phụ trách</h3>
+                            <p class="text-3xl font-bold" id="totalClassesAssigned">0</p>
+                        </div>
+                        <div class="bg-green-500 text-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-bold">Tổng số tiết</h3>
+                            <p class="text-3xl font-bold" id="totalPeriods">0</p>
+                        </div>
+                        <div class="bg-orange-500 text-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-bold">Số tiết quy đổi</h3>
+                            <p class="text-3xl font-bold" id="totalAdjustedPeriods">0</p>
+                        </div>
+                        <div class="bg-purple-500 text-white p-6 rounded-lg shadow-md">
+                            <h3 class="text-lg font-bold">Tổng tiền dạy</h3>
+                            <p class="text-3xl font-bold" id="totalSalary">0 VNĐ</p>
+                        </div>
+                    </div>
+
+                    <!-- Teacher Info -->
+                    <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+                        <h2 class="text-xl font-bold mb-4">Thông tin giáo viên</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <strong>Mã GV:</strong> <span id="teacherCodeResult"></span>
+                            </div>
+                            <div>
+                                <strong>Tên:</strong> <span id="teacherNameResult"></span>
+                            </div>
+                            <div>
+                                <strong>Bằng cấp:</strong> <span id="teacherDegreeResult"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Calculation Table -->
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-xl font-bold mb-4">Chi tiết tính toán</h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse border border-gray-300 text-sm">
+                                <thead>
+                                    <tr class="bg-gray-100">
+                                        <th class="border px-2 py-2">STT</th>
+                                        <th class="border px-2 py-2">Mã lớp</th>
+                                        <th class="border px-2 py-2">Tên lớp</th>
+                                        <th class="border px-2 py-2">Học phần</th>
+                                        <th class="border px-2 py-2">Số tiết</th>
+                                        <th class="border px-2 py-2">Số SV</th>
+                                        <th class="border px-2 py-2">Hệ số HP</th>
+                                        <th class="border px-2 py-2">Hệ số lớp</th>
+                                        <th class="border px-2 py-2">Tiết quy đổi</th>
+                                        <th class="border px-2 py-2">Hệ số GV</th>
+                                        <th class="border px-2 py-2">Tiền/tiết</th>
+                                        <th class="border px-2 py-2">Tiền dạy</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="salaryDetailTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div id="popupEditFacultyForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-            <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-                <h3 class="text-lg font-semibold mb-2">Sửa khoa</h3>
-                <input id="editFacultyFullName" type="text" class="border p-2 w-full mb-2" />
-                <input id="editFacultyShortName" type="text" class="border p-2 w-full mb-2" />
-                <textarea id="editFacultyDescription" class="border p-2 w-full mb-2" rows="4"></textarea>
-                <div class="flex justify-end gap-2">
-                    <button onclick="FacultyHandlers.update()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
-                    <button onclick="UI.togglePopup('popupEditFacultyForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+
+        <!-- Popup Forms -->
+        <!-- Add Degree Popup -->
+        <div id="popupFormDegreeAdd" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Thêm Bằng cấp</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên đầy đủ:</label>
+                    <input type="text" id="degreeFullName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên viết tắt:</label>
+                    <input type="text" id="degreeShortName" class="w-full p-2 border rounded">
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="addDegree()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Lưu</button>
+                    <button onclick="togglePopup('popupFormDegreeAdd')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
                 </div>
             </div>
         </div>
-      </section>
 
-      <section id="teachers" class="hidden bg-white p-6 rounded shadow relative">
-        <h2 class="text-xl font-bold mb-4">👩‍🏫 Danh sách giáo viên</h2>
-        <button onclick="UI.togglePopup('popupTeacherForm')" class="mb-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">➕ Thêm mới</button>
-        <table class="w-full text-left border">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border px-4 py-2">STT</th>
-              <th class="border px-4 py-2">Mã GV</th>
-              <th class="border px-4 py-2">Họ tên</th>
-              <th class="border px-4 py-2">Ngày Sinh</th>
-              <th class="border px-4 py-2">Email</th>
-              <th class="border px-4 py-2">Số điện thoại</th>
-              <th class="border px-4 py-2">Khoa</th>
-              <th class="border px-4 py-2">Bằng cấp</th>
-              <th class="border px-4 py-2">Hành động</th>
-            </tr>
-          </thead>
-          <tbody id="teacherTable"></tbody>
-        </table>
-        <div id="popupTeacherForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-            <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-                <h3 class="text-lg font-semibold mb-2">Thêm giáo viên</h3>
-                <input id="teacherCode" type="text" placeholder="Mã GV" class="border p-2 w-full mb-2" />
-                <input id="teacherName" type="text" placeholder="Họ tên" class="border p-2 w-full mb-2" />
-                <input id="teacherBirthDate" type="date" placeholder="Ngày Sinh" class="border p-2 w-full mb-2" />
-                <input id="teacherEmail" type="email" placeholder="Email" class="border p-2 w-full mb-2" />
-                <input id="teacherPhone" type="tel" placeholder="Số điện thoại" class="border p-2 w-full mb-2" />
-                <select id="teacherFaculty" class="border p-2 w-full mb-2">
-                    <option value="">Chọn khoa</option>
-                </select>
-                <select id="teacherDegree" class="border p-2 w-full mb-2">
-                    <option value="">Chọn bằng cấp</option>
-                </select>
-                <div class="flex justify-end gap-2">
-                    <button onclick="TeacherHandlers.add()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm</button>
-                    <button onclick="UI.togglePopup('popupTeacherForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+        <!-- Edit Degree Popup -->
+        <div id="popupFormDegreeEdit" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Sửa Bằng cấp</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên đầy đủ:</label>
+                    <input type="text" id="editDegreeFullName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên viết tắt:</label>
+                    <input type="text" id="editDegreeShortName" class="w-full p-2 border rounded">
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="updateDegree()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Cập nhật</button>
+                    <button onclick="togglePopup('popupFormDegreeEdit')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
                 </div>
             </div>
         </div>
-        <div id="popupEditTeacherForm" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-10">
-            <div class="bg-white p-6 rounded shadow-lg w-96 relative">
-                <h3 class="text-lg font-semibold mb-2">Sửa giáo viên</h3>
-                <input id="editTeacherCode" type="text" placeholder="Mã GV" class="border p-2 w-full mb-2" />
-                <input id="editTeacherName" type="text" placeholder="Họ tên" class="border p-2 w-full mb-2" />
-                <input id="editTeacherBirthDate" type="date" placeholder="Ngày Sinh" class="border p-2 w-full mb-2" />
-                <input id="editTeacherEmail" type="email" placeholder="Email" class="border p-2 w-full mb-2" />
-                <input id="editTeacherPhone" type="tel" placeholder="Số điện thoại" class="border p-2 w-full mb-2" />
-                <select id="editTeacherFaculty" class="border p-2 w-full mb-2">
-                    <option value="">Chọn khoa</option>
-                </select>
-                <select id="editTeacherDegree" class="border p-2 w-full mb-2">
-                    <option value="">Chọn bằng cấp</option>
-                </select>
-                <div class="flex justify-end gap-2">
-                    <button onclick="TeacherHandlers.update()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
-                    <button onclick="UI.togglePopup('popupEditTeacherForm')" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">Huỷ</button>
+
+        <!-- Add Faculty Popup -->
+        <div id="popupFacultyFormAdd" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Thêm Khoa</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên đầy đủ:</label>
+                    <input type="text" id="facultyFullName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên viết tắt:</label>
+                    <input type="text" id="facultyShortName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Mô tả:</label>
+                    <textarea id="facultyDescription" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="addFaculty()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Lưu</button>
+                    <button onclick="togglePopup('popupFacultyFormAdd')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
                 </div>
             </div>
         </div>
-      </section>
 
-      <section id="statistics" class="hidden bg-white p-6 rounded shadow">
-        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📊 Thống kê giáo viên</h2>
-        <div class="mb-4">
-          <label class="block mb-1">Lọc theo khoa</label>
-          <select id="facultyFilter" class="w-full border rounded p-2">
-            <option value="">Tất cả</option>
-          </select>
+        <!-- Edit Faculty Popup -->
+        <div id="popupFacultyFormEdit" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Sửa Khoa</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên đầy đủ:</label>
+                    <input type="text" id="editFacultyFullName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên viết tắt:</label>
+                    <input type="text" id="editFacultyShortName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Mô tả:</label>
+                    <textarea id="editFacultyDescription" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="updateFaculty()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Cập nhật</button>
+                    <button onclick="togglePopup('popupFacultyFormEdit')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
         </div>
-        <div class="mb-4">
-          <label class="block mb-1">Lọc theo bằng cấp</label>
-          <select id="degreeFilter" class="w-full border rounded p-2">
-            <option value="">Tất cả</option>
-          </select>
-        </div>
-        <p class="font-semibold">Tổng số giáo viên: <span id="teacherCount">0</span></p>
-        <div class="mt-4">
-          <h3 class="text-lg font-semibold mb-2">Danh sách giáo viên được thống kê</h3>
-          <table class="w-full text-left border">
-            <thead>
-              <tr class="bg-gray-100">
-                <th class="border px-4 py-2">STT</th>
-                <th class="border px-4 py-2">Mã GV</th>
-                <th class="border px-4 py-2">Họ tên</th>
-                <th class="border px-4 py-2">Ngày Sinh</th>
-                <th class="border px-4 py-2">Email</th>
-                <th class="border px-4 py-2">Số điện thoại</th>
-                <th class="border px-4 py-2">Khoa</th>
-                <th class="border px-4 py-2">Bằng cấp</th>
-              </tr>
-            </thead>
-            <tbody id="filteredTeacherTable"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
 
-  <script src="js/config.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/degrees.js"></script>
-  <script src="js/faculties.js"></script>
-  <script src="js/teachers.js"></script>
-  <script src="js/statistics.js"></script>
-  <script src="js/main.js"></script>
+        <!-- Add Teacher Popup -->
+        <div id="popupTeacherFormAdd" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Thêm Giáo viên</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Mã giáo viên:</label>
+                    <input type="text" id="teacherCode" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên:</label>
+                    <input type="text" id="teacherName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Ngày sinh:</label>
+                    <input type="date" id="teacherBirthDate" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Email:</label>
+                    <input type="email" id="teacherEmail" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Điện thoại:</label>
+                    <input type="text" id="teacherPhone" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Khoa:</label>
+                    <select id="teacherFaculty" class="w-full p-2 border rounded"></select>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Bằng cấp:</label>
+                    <select id="teacherDegree" class="w-full p-2 border rounded"></select>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="addTeacher()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Lưu</button>
+                    <button onclick="togglePopup('popupTeacherFormAdd')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Teacher Popup -->
+        <div id="popupTeacherFormEdit" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Sửa Giáo viên</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Mã giáo viên:</label>
+                    <input type="text" id="editTeacherCode" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên:</label>
+                    <input type="text" id="editTeacherName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Ngày sinh:</label>
+                    <input type="date" id="editTeacherBirthDate" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Email:</label>
+                    <input type="email" id="editTeacherEmail" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Điện thoại:</label>
+                    <input type="text" id="editTeacherPhone" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Khoa:</label>
+                    <select id="editTeacherFaculty" class="w-full p-2 border rounded"></select>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Bằng cấp:</label>
+                    <select id="editTeacherDegree" class="w-full p-2 border rounded"></select>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="updateTeacher()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Cập nhật</button>
+                    <button onclick="togglePopup('popupTeacherFormEdit')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Salary Management Popups -->
+        <!-- Add Salary Rate Popup -->
+        <div id="popupSalaryRateAdd" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Thêm định mức tiền/tiết</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên định mức*:</label>
+                    <input type="text" id="salaryRateName" class="w-full p-2 border rounded" placeholder="VD: Định mức chuẩn 2024">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Số tiền/tiết*:</label>
+                    <input type="number" id="salaryRateAmount" class="w-full p-2 border rounded" min="0" step="1000" placeholder="VD: 50000">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Mô tả:</label>
+                    <textarea id="salaryRateDescription" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="SalaryHandlers.saveSalaryRate()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Lưu</button>
+                    <button onclick="SalaryHandlers.closePopup('popupSalaryRateAdd')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Salary Rate Popup -->
+        <div id="popupSalaryRateEdit" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Sửa định mức tiền/tiết</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Tên định mức*:</label>
+                    <input type="text" id="editSalaryRateName" class="w-full p-2 border rounded">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Số tiền/tiết*:</label>
+                    <input type="number" id="editSalaryRateAmount" class="w-full p-2 border rounded" min="0" step="1000">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Mô tả:</label>
+                    <textarea id="editSalaryRateDescription" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="SalaryHandlers.updateSalaryRate()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Cập nhật</button>
+                    <button onclick="SalaryHandlers.closePopup('popupSalaryRateEdit')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Teacher Coefficient Popup -->
+        <div id="popupTeacherCoefficientAdd" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Thêm hệ số giáo viên</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Bằng cấp*:</label>
+                    <select id="teacherCoefficientDegree" class="w-full p-2 border rounded">
+                        <option value="">-- Chọn bằng cấp --</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Hệ số*:</label>
+                    <input type="number" id="teacherCoefficientValue" class="w-full p-2 border rounded" min="0" step="0.1" placeholder="VD: 1.5">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Mô tả:</label>
+                    <textarea id="teacherCoefficientDescription" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="SalaryHandlers.saveTeacherCoefficient()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Lưu</button>
+                    <button onclick="SalaryHandlers.closePopup('popupTeacherCoefficientAdd')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Teacher Coefficient Popup -->
+        <div id="popupTeacherCoefficientEdit" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Sửa hệ số giáo viên</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Bằng cấp*:</label>
+                    <select id="editTeacherCoefficientDegree" class="w-full p-2 border rounded">
+                        <option value="">-- Chọn bằng cấp --</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Hệ số*:</label>
+                    <input type="number" id="editTeacherCoefficientValue" class="w-full p-2 border rounded" min="0" step="0.1">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Mô tả:</label>
+                    <textarea id="editTeacherCoefficientDescription" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="SalaryHandlers.updateTeacherCoefficient()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Cập nhật</button>
+                    <button onclick="SalaryHandlers.closePopup('popupTeacherCoefficientEdit')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Class Coefficient Popup -->
+        <div id="popupClassCoefficientAdd" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Thêm hệ số lớp</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Số sinh viên từ*:</label>
+                    <input type="number" id="classCoefficientMinStudents" class="w-full p-2 border rounded" min="0" placeholder="VD: 20">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Số sinh viên đến*:</label>
+                    <input type="number" id="classCoefficientMaxStudents" class="w-full p-2 border rounded" min="0" placeholder="VD: 29">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Hệ số*:</label>
+                    <input type="number" id="classCoefficientValue" class="w-full p-2 border rounded" step="0.1" placeholder="VD: -0.2">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Mô tả:</label>
+                    <textarea id="classCoefficientDescription" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="SalaryHandlers.saveClassCoefficient()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Lưu</button>
+                    <button onclick="SalaryHandlers.closePopup('popupClassCoefficientAdd')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Class Coefficient Popup -->
+        <div id="popupClassCoefficientEdit" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Sửa hệ số lớp</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Số sinh viên từ*:</label>
+                    <input type="number" id="editClassCoefficientMinStudents" class="w-full p-2 border rounded" min="0">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Số sinh viên đến*:</label>
+                    <input type="number" id="editClassCoefficientMaxStudents" class="w-full p-2 border rounded" min="0">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Hệ số*:</label>
+                    <input type="number" id="editClassCoefficientValue" class="w-full p-2 border rounded" step="0.1">
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Mô tả:</label>
+                    <textarea id="editClassCoefficientDescription" class="w-full p-2 border rounded" rows="3"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="SalaryHandlers.updateClassCoefficient()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Cập nhật</button>
+                    <button onclick="SalaryHandlers.closePopup('popupClassCoefficientEdit')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
 </body>
-</html>
+</html> 
