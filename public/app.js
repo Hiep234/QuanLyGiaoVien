@@ -205,7 +205,7 @@ const SemesterHandlers = {
         
         try {
             await axios.post(`${API_URL}/semesters`, {
-                name, year: parseInt(year), startDate, endDate
+                name, year, startDate, endDate
             });
             SemesterHandlers.hideForm();
             SemesterHandlers.load();
@@ -226,7 +226,7 @@ const SemesterHandlers = {
         
         try {
             await axios.put(`${API_URL}/semesters/${SemesterHandlers.editingSemesterId}`, {
-                name, year: parseInt(year), startDate, endDate
+                name, year, startDate, endDate
             });
             SemesterHandlers.hideForm();
             SemesterHandlers.load();
@@ -1239,7 +1239,7 @@ const SalaryHandlers = {
         const description = document.getElementById('salaryRateDescription').value;
 
         if (!name || !amount) {
-            return alert('Vui lòng điền đầy đủ tên định mức và số tiền.');
+            return alert('Vui lòng chọn năm học và nhập số tiền.');
         }
 
         try {
@@ -1249,11 +1249,16 @@ const SalaryHandlers = {
                 description: description
             });
 
+            alert(`Đã tạo thành công định mức tiền/tiết cho năm học ${name}!`);
             SalaryHandlers.closePopup('popupSalaryRateAdd');
             SalaryHandlers.loadSalaryRates();
         } catch (error) {
             console.error('Error saving salary rate:', error);
-            alert('Lỗi khi lưu định mức: ' + (error.response?.data?.message || error.message));
+            if (error.response?.status === 400 && error.response?.data?.message?.includes('đã có định mức tiền/tiết')) {
+                alert(error.response.data.message);
+            } else {
+                alert('Lỗi khi lưu định mức: ' + (error.response?.data?.message || error.message));
+            }
         }
     },
 
@@ -1263,7 +1268,7 @@ const SalaryHandlers = {
         const description = document.getElementById('editSalaryRateDescription').value;
 
         if (!name || !amount) {
-            return alert('Vui lòng điền đầy đủ tên định mức và số tiền.');
+            return alert('Vui lòng chọn năm học và nhập số tiền.');
         }
 
         try {
@@ -1273,11 +1278,16 @@ const SalaryHandlers = {
                 description: description
             });
 
+            alert(`Đã cập nhật thành công định mức tiền/tiết cho năm học ${name}!`);
             SalaryHandlers.closePopup('popupSalaryRateEdit');
             SalaryHandlers.loadSalaryRates();
         } catch (error) {
             console.error('Error updating salary rate:', error);
-            alert('Lỗi khi cập nhật định mức: ' + (error.response?.data?.message || error.message));
+            if (error.response?.status === 400 && error.response?.data?.message?.includes('đã có định mức tiền/tiết')) {
+                alert(error.response.data.message);
+            } else {
+                alert('Lỗi khi cập nhật định mức: ' + (error.response?.data?.message || error.message));
+            }
         }
     },
 
@@ -1308,23 +1318,38 @@ const SalaryHandlers = {
     // === TEACHER COEFFICIENTS ===
     loadTeacherCoefficients: async () => {
         try {
+            // Get year filter value
+            const yearFilter = document.getElementById('teacherCoefficientYearFilter')?.value || '';
+            const url = yearFilter ? `${API_URL}/salary/teacher-coefficients?year=${yearFilter}` : `${API_URL}/salary/teacher-coefficients`;
+            
             // Load both coefficients and degrees
-            const [coeffResponse, degreesResponse] = await Promise.all([
-                axios.get(`${API_URL}/salary/teacher-coefficients`),
-                axios.get(`${API_URL}/salary/degrees`)
+            const [coeffResponse, degreesResponse, yearsResponse] = await Promise.all([
+                axios.get(url),
+                axios.get(`${API_URL}/salary/degrees`),
+                axios.get(`${API_URL}/salary/teacher-coefficients/years`)
             ]);
             
             const coefficients = coeffResponse.data;
             const degrees = degreesResponse.data;
+            const years = yearsResponse.data;
             
-            // Populate degree dropdowns
+            // Populate dropdowns
             SalaryHandlers.populateDegreeDropdowns(degrees);
+            SalaryHandlers.populateYearFilter('teacherCoefficientYearFilter', years, yearFilter);
+            SalaryHandlers.populateYearFilter('copyTeacherCoeffFromYear', years);
+            
+            // Update count
+            const countElement = document.getElementById('teacherCoefficientsCount');
+            if (countElement) {
+                countElement.textContent = `${coefficients.length} hệ số`;
+            }
             
             const tableBody = document.getElementById('teacherCoefficientTable');
             if (tableBody) {
                 tableBody.innerHTML = coefficients.map((coeff, index) =>
                     `<tr>
                         <td class="border px-4 py-2">${index + 1}</td>
+                        <td class="border px-4 py-2">${coeff.year || 'N/A'}</td>
                         <td class="border px-4 py-2">${coeff.degreeId?.fullName || 'N/A'}</td>
                         <td class="border px-4 py-2">${coeff.coefficient}</td>
                         <td class="border px-4 py-2">${coeff.description || ''}</td>
@@ -1373,6 +1398,7 @@ const SalaryHandlers = {
                 SalaryHandlers.populateDegreeDropdowns(degrees);
                 
                 SalaryHandlers.editingTeacherCoefficientId = id;
+                document.getElementById('editTeacherCoefficientYear').value = coeff.year || '';
                 document.getElementById('editTeacherCoefficientDegree').value = coeff.degreeId?._id || '';
                 document.getElementById('editTeacherCoefficientValue').value = coeff.coefficient;
                 document.getElementById('editTeacherCoefficientDescription').value = coeff.description || '';
@@ -1385,50 +1411,58 @@ const SalaryHandlers = {
     },
 
     saveTeacherCoefficient: async () => {
+        const year = document.getElementById('teacherCoefficientYear').value;
         const degreeId = document.getElementById('teacherCoefficientDegree').value;
         const value = document.getElementById('teacherCoefficientValue').value;
         const description = document.getElementById('teacherCoefficientDescription').value;
 
-        if (!degreeId || !value) {
-            return alert('Vui lòng chọn bằng cấp và nhập hệ số.');
+        if (!year || !degreeId || !value) {
+            return SalaryHandlers.showError('Vui lòng chọn năm học, bằng cấp và nhập hệ số.');
         }
 
         try {
             await axios.post(`${API_URL}/salary/teacher-coefficients`, {
+                year: year,
                 degreeId: degreeId,
                 coefficient: parseFloat(value),
                 description: description
             });
 
+            SalaryHandlers.showSuccess('Thêm hệ số giáo viên thành công!');
             SalaryHandlers.closePopup('popupTeacherCoefficientAdd');
             SalaryHandlers.loadTeacherCoefficients();
         } catch (error) {
             console.error('Error saving teacher coefficient:', error);
-            alert('Lỗi khi lưu hệ số giáo viên: ' + (error.response?.data?.message || error.message));
+            const errorMessage = error.response?.data?.message || error.message;
+            SalaryHandlers.showError('❌ ' + errorMessage);
         }
     },
 
     updateTeacherCoefficient: async () => {
+        const year = document.getElementById('editTeacherCoefficientYear').value;
         const degreeId = document.getElementById('editTeacherCoefficientDegree').value;
         const value = document.getElementById('editTeacherCoefficientValue').value;
         const description = document.getElementById('editTeacherCoefficientDescription').value;
 
-        if (!degreeId || !value) {
-            return alert('Vui lòng chọn bằng cấp và nhập hệ số.');
+        if (!year || !degreeId || !value) {
+            return SalaryHandlers.showError('Vui lòng chọn năm học, bằng cấp và nhập hệ số.');
         }
 
         try {
             await axios.put(`${API_URL}/salary/teacher-coefficients/${SalaryHandlers.editingTeacherCoefficientId}`, {
+                year: year,
                 degreeId: degreeId,
                 coefficient: parseFloat(value),
                 description: description
             });
 
+            SalaryHandlers.showSuccess('Cập nhật hệ số giáo viên thành công!');
             SalaryHandlers.closePopup('popupTeacherCoefficientEdit');
             SalaryHandlers.loadTeacherCoefficients();
         } catch (error) {
             console.error('Error updating teacher coefficient:', error);
-            alert('Lỗi khi cập nhật hệ số giáo viên: ' + (error.response?.data?.message || error.message));
+            const errorMessage = error.response?.data?.message || error.message;
+            SalaryHandlers.showError('❌ ' + errorMessage);
         }
     },
 
@@ -1447,14 +1481,34 @@ const SalaryHandlers = {
     // === CLASS COEFFICIENTS ===
     loadClassCoefficients: async () => {
         try {
-            const response = await axios.get(`${API_URL}/salary/class-coefficients`);
-            const coefficients = response.data;
+            // Get year filter value
+            const yearFilter = document.getElementById('classCoefficientYearFilter')?.value || '';
+            const url = yearFilter ? `${API_URL}/salary/class-coefficients?year=${yearFilter}` : `${API_URL}/salary/class-coefficients`;
+            
+            const [coeffResponse, yearsResponse] = await Promise.all([
+                axios.get(url),
+                axios.get(`${API_URL}/salary/class-coefficients/years`)
+            ]);
+            
+            const coefficients = coeffResponse.data;
+            const years = yearsResponse.data;
+            
+            // Populate year filters
+            SalaryHandlers.populateYearFilter('classCoefficientYearFilter', years, yearFilter);
+            SalaryHandlers.populateYearFilter('copyClassCoeffFromYear', years);
+            
+            // Update count
+            const countElement = document.getElementById('classCoefficientsCount');
+            if (countElement) {
+                countElement.textContent = `${coefficients.length} hệ số`;
+            }
             
             const tableBody = document.getElementById('classCoefficientTable');
             if (tableBody) {
                 tableBody.innerHTML = coefficients.map((coeff, index) =>
                     `<tr>
                         <td class="border px-4 py-2">${index + 1}</td>
+                        <td class="border px-4 py-2">${coeff.year || 'N/A'}</td>
                         <td class="border px-4 py-2">${coeff.minStudents}</td>
                         <td class="border px-4 py-2">${coeff.maxStudents}</td>
                         <td class="border px-4 py-2">${coeff.coefficient}</td>
@@ -1488,6 +1542,7 @@ const SalaryHandlers = {
             
             if (coeff) {
                 SalaryHandlers.editingClassCoefficientId = id;
+                document.getElementById('editClassCoefficientYear').value = coeff.year || '';
                 document.getElementById('editClassCoefficientMinStudents').value = coeff.minStudents;
                 document.getElementById('editClassCoefficientMaxStudents').value = coeff.maxStudents;
                 document.getElementById('editClassCoefficientValue').value = coeff.coefficient;
@@ -1501,62 +1556,78 @@ const SalaryHandlers = {
     },
 
     saveClassCoefficient: async () => {
+        const year = document.getElementById('classCoefficientYear').value;
         const minStudents = document.getElementById('classCoefficientMinStudents').value;
         const maxStudents = document.getElementById('classCoefficientMaxStudents').value;
         const value = document.getElementById('classCoefficientValue').value;
         const description = document.getElementById('classCoefficientDescription').value;
 
-        if (!minStudents || !maxStudents || !value) {
-            return alert('Vui lòng điền đầy đủ thông tin.');
+        if (!year || !minStudents || !maxStudents || !value) {
+            return SalaryHandlers.showError('Vui lòng chọn năm học và điền đầy đủ thông tin.');
+        }
+
+        if (parseInt(minStudents) < 0 || parseInt(maxStudents) < 0) {
+            return SalaryHandlers.showError('Số lượng sinh viên không thể là số âm. Vui lòng nhập số từ 0 trở lên.');
         }
 
         if (parseInt(minStudents) > parseInt(maxStudents)) {
-            return alert('Số sinh viên tối thiểu không thể lớn hơn tối đa.');
+            return SalaryHandlers.showError('Số sinh viên tối thiểu không thể lớn hơn tối đa.');
         }
 
         try {
             await axios.post(`${API_URL}/salary/class-coefficients`, {
+                year: year,
                 minStudents: parseInt(minStudents),
                 maxStudents: parseInt(maxStudents),
                 coefficient: parseFloat(value),
                 description: description
             });
 
+            SalaryHandlers.showSuccess('Thêm hệ số lớp thành công!');
             SalaryHandlers.closePopup('popupClassCoefficientAdd');
             SalaryHandlers.loadClassCoefficients();
         } catch (error) {
             console.error('Error saving class coefficient:', error);
-            alert('Lỗi khi lưu hệ số lớp: ' + (error.response?.data?.message || error.message));
+            const errorMessage = error.response?.data?.message || error.message;
+            SalaryHandlers.showError('❌ ' + errorMessage);
         }
     },
 
     updateClassCoefficient: async () => {
+        const year = document.getElementById('editClassCoefficientYear').value;
         const minStudents = document.getElementById('editClassCoefficientMinStudents').value;
         const maxStudents = document.getElementById('editClassCoefficientMaxStudents').value;
         const value = document.getElementById('editClassCoefficientValue').value;
         const description = document.getElementById('editClassCoefficientDescription').value;
 
-        if (!minStudents || !maxStudents || !value) {
-            return alert('Vui lòng điền đầy đủ thông tin.');
+        if (!year || !minStudents || !maxStudents || !value) {
+            return SalaryHandlers.showError('Vui lòng chọn năm học và điền đầy đủ thông tin.');
+        }
+
+        if (parseInt(minStudents) < 0 || parseInt(maxStudents) < 0) {
+            return SalaryHandlers.showError('Số lượng sinh viên không thể là số âm. Vui lòng nhập số từ 0 trở lên.');
         }
 
         if (parseInt(minStudents) > parseInt(maxStudents)) {
-            return alert('Số sinh viên tối thiểu không thể lớn hơn tối đa.');
+            return SalaryHandlers.showError('Số sinh viên tối thiểu không thể lớn hơn tối đa.');
         }
 
         try {
             await axios.put(`${API_URL}/salary/class-coefficients/${SalaryHandlers.editingClassCoefficientId}`, {
+                year: year,
                 minStudents: parseInt(minStudents),
                 maxStudents: parseInt(maxStudents),
                 coefficient: parseFloat(value),
                 description: description
             });
 
+            SalaryHandlers.showSuccess('Cập nhật hệ số lớp thành công!');
             SalaryHandlers.closePopup('popupClassCoefficientEdit');
             SalaryHandlers.loadClassCoefficients();
         } catch (error) {
             console.error('Error updating class coefficient:', error);
-            alert('Lỗi khi cập nhật hệ số lớp: ' + (error.response?.data?.message || error.message));
+            const errorMessage = error.response?.data?.message || error.message;
+            SalaryHandlers.showError('❌ ' + errorMessage);
         }
     },
 
@@ -1704,7 +1775,149 @@ const SalaryHandlers = {
         });
     },
 
+    populateYearFilter: (elementId, years, selectedYear = '') => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            const options = years.map(year => `<option value="${year}" ${year === selectedYear ? 'selected' : ''}>${year}</option>`).join('');
+            if (elementId.includes('Filter')) {
+                element.innerHTML = '<option value="">-- Tất cả năm học --</option>' + options;
+            } else {
+                element.innerHTML = '<option value="">-- Chọn năm học --</option>' + options;
+            }
+        }
+    },
+
     closePopup: (popupId) => {
         document.getElementById(popupId).classList.add('hidden');
+    },
+
+    // === COPY FUNCTIONS ===
+    showCopyTeacherCoefficientsForm: async () => {
+        try {
+            const yearsResponse = await axios.get(`${API_URL}/salary/teacher-coefficients/years`);
+            SalaryHandlers.populateYearFilter('copyTeacherCoeffFromYear', yearsResponse.data);
+            document.getElementById('copyTeacherCoeffToYear').value = '';
+            document.getElementById('popupCopyTeacherCoefficients').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error loading years:', error);
+            alert('Không thể tải danh sách năm học.');
+        }
+    },
+
+    copyTeacherCoefficients: async () => {
+        const fromYear = document.getElementById('copyTeacherCoeffFromYear').value;
+        const toYear = document.getElementById('copyTeacherCoeffToYear').value;
+
+        if (!fromYear || !toYear) {
+            return SalaryHandlers.showError('Vui lòng chọn năm học nguồn và đích.');
+        }
+
+        if (fromYear === toYear) {
+            return SalaryHandlers.showError('Năm học nguồn và đích không thể giống nhau.');
+        }
+
+        try {
+            const response = await axios.post(`${API_URL}/salary/teacher-coefficients/copy`, {
+                fromYear: fromYear,
+                toYear: toYear
+            });
+
+            SalaryHandlers.showSuccess(response.data.message);
+            SalaryHandlers.closePopup('popupCopyTeacherCoefficients');
+            SalaryHandlers.loadTeacherCoefficients();
+        } catch (error) {
+            console.error('Error copying teacher coefficients:', error);
+            const errorMessage = error.response?.data?.message || error.message;
+            SalaryHandlers.showError('❌ ' + errorMessage);
+        }
+    },
+
+    showCopyClassCoefficientsForm: async () => {
+        try {
+            const yearsResponse = await axios.get(`${API_URL}/salary/class-coefficients/years`);
+            SalaryHandlers.populateYearFilter('copyClassCoeffFromYear', yearsResponse.data);
+            document.getElementById('copyClassCoeffToYear').value = '';
+            document.getElementById('popupCopyClassCoefficients').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error loading years:', error);
+            alert('Không thể tải danh sách năm học.');
+        }
+    },
+
+    copyClassCoefficients: async () => {
+        const fromYear = document.getElementById('copyClassCoeffFromYear').value;
+        const toYear = document.getElementById('copyClassCoeffToYear').value;
+
+        if (!fromYear || !toYear) {
+            return SalaryHandlers.showError('Vui lòng chọn năm học nguồn và đích.');
+        }
+
+        if (fromYear === toYear) {
+            return SalaryHandlers.showError('Năm học nguồn và đích không thể giống nhau.');
+        }
+
+        try {
+            const response = await axios.post(`${API_URL}/salary/class-coefficients/copy`, {
+                fromYear: fromYear,
+                toYear: toYear
+            });
+
+            SalaryHandlers.showSuccess(response.data.message);
+            SalaryHandlers.closePopup('popupCopyClassCoefficients');
+            SalaryHandlers.loadClassCoefficients();
+        } catch (error) {
+            console.error('Error copying class coefficients:', error);
+            const errorMessage = error.response?.data?.message || error.message;
+            SalaryHandlers.showError('❌ ' + errorMessage);
+        }
+    },
+
+    // === NOTIFICATION FUNCTIONS ===
+    showError: (message) => {
+        SalaryHandlers.showNotification(message, 'error');
+    },
+
+    showSuccess: (message) => {
+        SalaryHandlers.showNotification(message, 'success');
+    },
+
+    showNotification: (message, type = 'info') => {
+        // Remove existing notifications
+        const existingNotifications = document.querySelectorAll('.notification-toast');
+        existingNotifications.forEach(notif => notif.remove());
+
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `notification-toast fixed top-4 right-4 z-50 max-w-md p-4 rounded-lg shadow-lg transition-all duration-300 transform`;
+        
+        if (type === 'error') {
+            notification.className += ' bg-red-100 border border-red-400 text-red-700';
+        } else if (type === 'success') {
+            notification.className += ' bg-green-100 border border-green-400 text-green-700';
+        } else {
+            notification.className += ' bg-blue-100 border border-blue-400 text-blue-700';
+        }
+
+        notification.innerHTML = `
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <p class="font-medium">${message}</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-lg font-bold hover:opacity-70">&times;</button>
+            </div>
+        `;
+
+        // Add to DOM
+        document.body.appendChild(notification);
+
+        // Auto remove after 5 seconds for success, 8 seconds for error
+        const timeout = type === 'error' ? 8000 : 5000;
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }
+        }, timeout);
     }
 };

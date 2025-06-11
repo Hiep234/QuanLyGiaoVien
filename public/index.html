@@ -313,7 +313,16 @@
                             </div>
                             <div>
                                 <label class="block mb-2">Năm học*:</label>
-                                <input type="number" id="semesterYearFormInput" class="w-full p-2 border rounded" min="2020" max="2050" required>
+                                <select id="semesterYearFormInput" class="w-full p-2 border rounded" required>
+                                    <option value="">-- Chọn năm học --</option>
+                                    <option value="2023-2024">2023-2024</option>
+                                    <option value="2024-2025">2024-2025</option>
+                                    <option value="2025-2026">2025-2026</option>
+                                    <option value="2026-2027">2026-2027</option>
+                                    <option value="2027-2028">2027-2028</option>
+                                    <option value="2028-2029">2028-2029</option>
+                                    <option value="2029-2030">2029-2030</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="block mb-2">Ngày bắt đầu*:</label>
@@ -639,7 +648,7 @@
                         <thead>
                             <tr class="bg-gray-100">
                                 <th class="border px-4 py-2">STT</th>
-                                <th class="border px-4 py-2">Tên định mức</th>
+                                <th class="border px-4 py-2">Năm học</th>
                                 <th class="border px-4 py-2">Số tiền/tiết</th>
                                 <th class="border px-4 py-2">Mô tả</th>
                                 <th class="border px-4 py-2">Trạng thái</th>
@@ -655,13 +664,29 @@
             <div id="teacher-coefficients" class="p-8 hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-3xl font-bold">Quản lý Hệ số giáo viên</h1>
-                    <button onclick="SalaryHandlers.showAddTeacherCoefficientForm()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm hệ số</button>
+                    <div class="flex gap-2">
+                        <button onclick="SalaryHandlers.showCopyTeacherCoefficientsForm()" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">Copy sang năm khác</button>
+                        <button onclick="SalaryHandlers.showAddTeacherCoefficientForm()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Thêm hệ số</button>
+                    </div>
                 </div>
+                
+                <!-- Year Filter -->
+                <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+                    <div class="flex items-center gap-4">
+                        <label class="font-semibold">Năm học:</label>
+                        <select id="teacherCoefficientYearFilter" class="p-2 border rounded" onchange="SalaryHandlers.loadTeacherCoefficients()">
+                            <option value="">-- Tất cả năm học --</option>
+                        </select>
+                        <span class="text-sm text-gray-600" id="teacherCoefficientsCount">0 hệ số</span>
+                    </div>
+                </div>
+
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <table class="w-full border-collapse border border-gray-300">
                         <thead>
                             <tr class="bg-gray-100">
                                 <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Năm học</th>
                                 <th class="border px-4 py-2">Bằng cấp</th>
                                 <th class="border px-4 py-2">Hệ số</th>
                                 <th class="border px-4 py-2">Mô tả</th>
@@ -677,13 +702,29 @@
             <div id="class-coefficients" class="p-8 hidden">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-3xl font-bold">Quản lý Hệ số lớp</h1>
-                    <button onclick="SalaryHandlers.showAddClassCoefficientForm()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Thêm hệ số</button>
+                    <div class="flex gap-2">
+                        <button onclick="SalaryHandlers.showCopyClassCoefficientsForm()" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">Copy sang năm khác</button>
+                        <button onclick="SalaryHandlers.showAddClassCoefficientForm()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Thêm hệ số</button>
+                    </div>
                 </div>
+                
+                <!-- Year Filter -->
+                <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+                    <div class="flex items-center gap-4">
+                        <label class="font-semibold">Năm học:</label>
+                        <select id="classCoefficientYearFilter" class="p-2 border rounded" onchange="SalaryHandlers.loadClassCoefficients()">
+                            <option value="">-- Tất cả năm học --</option>
+                        </select>
+                        <span class="text-sm text-gray-600" id="classCoefficientsCount">0 hệ số</span>
+                    </div>
+                </div>
+
                 <div class="bg-white p-6 rounded-lg shadow-md">
                     <table class="w-full border-collapse border border-gray-300">
                         <thead>
                             <tr class="bg-gray-100">
                                 <th class="border px-4 py-2">STT</th>
+                                <th class="border px-4 py-2">Năm học</th>
                                 <th class="border px-4 py-2">Từ (SV)</th>
                                 <th class="border px-4 py-2">Đến (SV)</th>
                                 <th class="border px-4 py-2">Hệ số</th>
@@ -959,8 +1000,17 @@
             <div class="bg-white p-6 rounded-lg w-96">
                 <h2 class="text-xl font-bold mb-4">Thêm định mức tiền/tiết</h2>
                 <div class="mb-4">
-                    <label class="block mb-2">Tên định mức*:</label>
-                    <input type="text" id="salaryRateName" class="w-full p-2 border rounded" placeholder="VD: Định mức chuẩn 2024">
+                    <label class="block mb-2">Năm học*:</label>
+                    <select id="salaryRateName" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học --</option>
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
+                        <option value="2028-2029">2028-2029</option>
+                        <option value="2029-2030">2029-2030</option>
+                    </select>
                 </div>
                 <div class="mb-4">
                     <label class="block mb-2">Số tiền/tiết*:</label>
@@ -982,8 +1032,17 @@
             <div class="bg-white p-6 rounded-lg w-96">
                 <h2 class="text-xl font-bold mb-4">Sửa định mức tiền/tiết</h2>
                 <div class="mb-4">
-                    <label class="block mb-2">Tên định mức*:</label>
-                    <input type="text" id="editSalaryRateName" class="w-full p-2 border rounded">
+                    <label class="block mb-2">Năm học*:</label>
+                    <select id="editSalaryRateName" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học --</option>
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
+                        <option value="2028-2029">2028-2029</option>
+                        <option value="2029-2030">2029-2030</option>
+                    </select>
                 </div>
                 <div class="mb-4">
                     <label class="block mb-2">Số tiền/tiết*:</label>
@@ -1004,6 +1063,19 @@
         <div id="popupTeacherCoefficientAdd" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
             <div class="bg-white p-6 rounded-lg w-96">
                 <h2 class="text-xl font-bold mb-4">Thêm hệ số giáo viên</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Năm học*:</label>
+                    <select id="teacherCoefficientYear" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học --</option>
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
+                        <option value="2028-2029">2028-2029</option>
+                        <option value="2029-2030">2029-2030</option>
+                    </select>
+                </div>
                 <div class="mb-4">
                     <label class="block mb-2">Bằng cấp*:</label>
                     <select id="teacherCoefficientDegree" class="w-full p-2 border rounded">
@@ -1030,6 +1102,19 @@
             <div class="bg-white p-6 rounded-lg w-96">
                 <h2 class="text-xl font-bold mb-4">Sửa hệ số giáo viên</h2>
                 <div class="mb-4">
+                    <label class="block mb-2">Năm học*:</label>
+                    <select id="editTeacherCoefficientYear" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học --</option>
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
+                        <option value="2028-2029">2028-2029</option>
+                        <option value="2029-2030">2029-2030</option>
+                    </select>
+                </div>
+                <div class="mb-4">
                     <label class="block mb-2">Bằng cấp*:</label>
                     <select id="editTeacherCoefficientDegree" class="w-full p-2 border rounded">
                         <option value="">-- Chọn bằng cấp --</option>
@@ -1055,16 +1140,29 @@
             <div class="bg-white p-6 rounded-lg w-96">
                 <h2 class="text-xl font-bold mb-4">Thêm hệ số lớp</h2>
                 <div class="mb-4">
+                    <label class="block mb-2">Năm học*:</label>
+                    <select id="classCoefficientYear" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học --</option>
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
+                        <option value="2028-2029">2028-2029</option>
+                        <option value="2029-2030">2029-2030</option>
+                    </select>
+                </div>
+                <div class="mb-4">
                     <label class="block mb-2">Số sinh viên từ*:</label>
-                    <input type="number" id="classCoefficientMinStudents" class="w-full p-2 border rounded" min="0" placeholder="VD: 20">
+                    <input type="number" id="classCoefficientMinStudents" class="w-full p-2 border rounded" min="0" step="1" placeholder="VD: 20">
                 </div>
                 <div class="mb-4">
                     <label class="block mb-2">Số sinh viên đến*:</label>
-                    <input type="number" id="classCoefficientMaxStudents" class="w-full p-2 border rounded" min="0" placeholder="VD: 29">
+                    <input type="number" id="classCoefficientMaxStudents" class="w-full p-2 border rounded" min="0" step="1" placeholder="VD: 29">
                 </div>
                 <div class="mb-4">
                     <label class="block mb-2">Hệ số*:</label>
-                    <input type="number" id="classCoefficientValue" class="w-full p-2 border rounded" step="0.1" placeholder="VD: -0.2">
+                    <input type="number" id="classCoefficientValue" class="w-full p-2 border rounded" step="0.1" placeholder="VD: 0.2">
                 </div>
                 <div class="mb-4">
                     <label class="block mb-2">Mô tả:</label>
@@ -1082,12 +1180,25 @@
             <div class="bg-white p-6 rounded-lg w-96">
                 <h2 class="text-xl font-bold mb-4">Sửa hệ số lớp</h2>
                 <div class="mb-4">
+                    <label class="block mb-2">Năm học*:</label>
+                    <select id="editClassCoefficientYear" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học --</option>
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
+                        <option value="2028-2029">2028-2029</option>
+                        <option value="2029-2030">2029-2030</option>
+                    </select>
+                </div>
+                <div class="mb-4">
                     <label class="block mb-2">Số sinh viên từ*:</label>
-                    <input type="number" id="editClassCoefficientMinStudents" class="w-full p-2 border rounded" min="0">
+                    <input type="number" id="editClassCoefficientMinStudents" class="w-full p-2 border rounded" min="0" step="1">
                 </div>
                 <div class="mb-4">
                     <label class="block mb-2">Số sinh viên đến*:</label>
-                    <input type="number" id="editClassCoefficientMaxStudents" class="w-full p-2 border rounded" min="0">
+                    <input type="number" id="editClassCoefficientMaxStudents" class="w-full p-2 border rounded" min="0" step="1">
                 </div>
                 <div class="mb-4">
                     <label class="block mb-2">Hệ số*:</label>
@@ -1100,6 +1211,72 @@
                 <div class="flex gap-4">
                     <button onclick="SalaryHandlers.updateClassCoefficient()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">Cập nhật</button>
                     <button onclick="SalaryHandlers.closePopup('popupClassCoefficientEdit')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Copy Teacher Coefficients Popup -->
+        <div id="popupCopyTeacherCoefficients" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Copy hệ số giáo viên sang năm khác</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Từ năm học*:</label>
+                    <select id="copyTeacherCoeffFromYear" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học nguồn --</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Sang năm học*:</label>
+                    <select id="copyTeacherCoeffToYear" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học đích --</option>
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
+                        <option value="2028-2029">2028-2029</option>
+                        <option value="2029-2030">2029-2030</option>
+                    </select>
+                </div>
+                <div class="mb-4 text-sm text-yellow-600 bg-yellow-50 p-3 rounded">
+                    <strong>Lưu ý:</strong> Năm học đích phải chưa có dữ liệu hệ số giáo viên. Nếu đã có, vui lòng xóa trước khi copy.
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="SalaryHandlers.copyTeacherCoefficients()" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">Copy</button>
+                    <button onclick="SalaryHandlers.closePopup('popupCopyTeacherCoefficients')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Copy Class Coefficients Popup -->
+        <div id="popupCopyClassCoefficients" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg w-96">
+                <h2 class="text-xl font-bold mb-4">Copy hệ số lớp sang năm khác</h2>
+                <div class="mb-4">
+                    <label class="block mb-2">Từ năm học*:</label>
+                    <select id="copyClassCoeffFromYear" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học nguồn --</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Sang năm học*:</label>
+                    <select id="copyClassCoeffToYear" class="w-full p-2 border rounded" required>
+                        <option value="">-- Chọn năm học đích --</option>
+                        <option value="2023-2024">2023-2024</option>
+                        <option value="2024-2025">2024-2025</option>
+                        <option value="2025-2026">2025-2026</option>
+                        <option value="2026-2027">2026-2027</option>
+                        <option value="2027-2028">2027-2028</option>
+                        <option value="2028-2029">2028-2029</option>
+                        <option value="2029-2030">2029-2030</option>
+                    </select>
+                </div>
+                <div class="mb-4 text-sm text-yellow-600 bg-yellow-50 p-3 rounded">
+                    <strong>Lưu ý:</strong> Năm học đích phải chưa có dữ liệu hệ số lớp. Nếu đã có, vui lòng xóa trước khi copy.
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="SalaryHandlers.copyClassCoefficients()" class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">Copy</button>
+                    <button onclick="SalaryHandlers.closePopup('popupCopyClassCoefficients')" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">Hủy</button>
                 </div>
             </div>
         </div>

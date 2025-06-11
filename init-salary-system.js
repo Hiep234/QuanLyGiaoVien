@@ -13,9 +13,9 @@ async function initSalarySystem() {
     const existingSalaryRate = await SalaryRate.findOne({ isActive: true });
     if (!existingSalaryRate) {
       const salaryRate = new SalaryRate({
-        name: 'Định mức lương chuẩn 2024',
+        name: '2024-2025',
         ratePerPeriod: 100000, // 100,000 VND per period
-        description: 'Mức lương cơ bản cho 1 tiết dạy',
+        description: 'Mức lương cơ bản cho 1 tiết dạy năm học 2024-2025',
         isActive: true,
         createdDate: new Date(),
         updatedDate: new Date()

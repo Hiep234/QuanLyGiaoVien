@@ -7,6 +7,7 @@ const Teacher = require('../models/Teacher');
 const Course = require('../models/Course');
 const ClassSection = require('../models/ClassSection');
 const Assignment = require('../models/Assignment');
+const Semester = require('../models/Semester');
 const Degree = require('../models/Degree');
 
 // ============= SALARY RATES =============
@@ -38,6 +39,9 @@ router.post('/rates', async (req, res) => {
     const savedRate = await rate.save();
     res.status(201).json(savedRate);
   } catch (error) {
+    if (error.code === 11000) { // Lỗi trùng lặp unique index
+      return res.status(400).json({ message: `Năm học '${req.body.name}' đã có định mức tiền/tiết. Vui lòng chọn năm học khác hoặc sửa định mức hiện tại.` });
+    }
     res.status(400).json({ message: error.message });
   }
 });
@@ -49,6 +53,9 @@ router.put('/rates/:id', async (req, res) => {
     const rate = await SalaryRate.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(rate);
   } catch (error) {
+    if (error.code === 11000) { // Lỗi trùng lặp unique index
+      return res.status(400).json({ message: `Năm học '${req.body.name}' đã có định mức tiền/tiết khác. Vui lòng chọn năm học khác.` });
+    }
     res.status(400).json({ message: error.message });
   }
 });
@@ -78,11 +85,23 @@ router.put('/rates/:id/activate', async (req, res) => {
 
 // ============= TEACHER COEFFICIENTS =============
 
-// Get all teacher coefficients with degree info
+// Get teacher coefficients by academic year
 router.get('/teacher-coefficients', async (req, res) => {
   try {
-    const coefficients = await TeacherCoefficient.find().populate('degreeId').sort({ coefficient: 1 });
+    const { year } = req.query;
+    const filter = year ? { year } : {};
+    const coefficients = await TeacherCoefficient.find(filter).populate('degreeId').sort({ year: -1, coefficient: 1 });
     res.json(coefficients);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get available academic years for teacher coefficients
+router.get('/teacher-coefficients/years', async (req, res) => {
+  try {
+    const years = await TeacherCoefficient.distinct('year');
+    res.json(years.sort().reverse());
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -106,6 +125,60 @@ router.post('/teacher-coefficients', async (req, res) => {
     const populatedCoefficient = await TeacherCoefficient.findById(savedCoefficient._id).populate('degreeId');
     res.status(201).json(populatedCoefficient);
   } catch (error) {
+    if (error.code === 11000) { // Lỗi trùng lặp unique index
+      return res.status(400).json({ message: `Hệ số giáo viên cho bằng cấp này đã tồn tại trong năm học '${req.body.year}'. Vui lòng chọn bằng cấp khác hoặc sửa hệ số hiện tại.` });
+    }
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Copy teacher coefficients to another academic year
+router.post('/teacher-coefficients/copy', async (req, res) => {
+  try {
+    const { fromYear, toYear } = req.body;
+    
+    if (!fromYear || !toYear) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp năm học nguồn và năm học đích' });
+    }
+
+    if (fromYear === toYear) {
+      return res.status(400).json({ message: 'Năm học nguồn và năm học đích không được giống nhau' });
+    }
+
+    // Check if target year already has data
+    const existingCoeffs = await TeacherCoefficient.find({ year: toYear });
+    if (existingCoeffs.length > 0) {
+      return res.status(400).json({ message: `Năm học '${toYear}' đã có dữ liệu hệ số giáo viên. Vui lòng xóa dữ liệu cũ trước khi copy.` });
+    }
+
+    // Get source coefficients
+    const sourceCoeffs = await TeacherCoefficient.find({ year: fromYear });
+    if (sourceCoeffs.length === 0) {
+      return res.status(400).json({ message: `Không tìm thấy dữ liệu hệ số giáo viên trong năm học '${fromYear}'` });
+    }
+
+    // Copy to target year
+    const newCoeffs = sourceCoeffs.map(coeff => ({
+      degreeId: coeff.degreeId,
+      coefficient: coeff.coefficient,
+      year: toYear,
+      description: coeff.description,
+      isActive: coeff.isActive,
+      createdDate: new Date(),
+      updatedDate: new Date()
+    }));
+
+    const savedCoeffs = await TeacherCoefficient.insertMany(newCoeffs);
+    const populatedCoeffs = await TeacherCoefficient.find({ 
+      _id: { $in: savedCoeffs.map(c => c._id) } 
+    }).populate('degreeId');
+
+    res.status(201).json({
+      message: `Đã copy thành công ${savedCoeffs.length} hệ số giáo viên từ năm học '${fromYear}' sang '${toYear}'`,
+      count: savedCoeffs.length,
+      coefficients: populatedCoeffs
+    });
+  } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
@@ -117,6 +190,9 @@ router.put('/teacher-coefficients/:id', async (req, res) => {
     const coefficient = await TeacherCoefficient.findByIdAndUpdate(req.params.id, req.body, { new: true }).populate('degreeId');
     res.json(coefficient);
   } catch (error) {
+    if (error.code === 11000) { // Lỗi trùng lặp unique index
+      return res.status(400).json({ message: `Hệ số giáo viên cho bằng cấp này đã tồn tại trong năm học '${req.body.year}'. Vui lòng chọn bằng cấp khác.` });
+    }
     res.status(400).json({ message: error.message });
   }
 });
@@ -133,11 +209,23 @@ router.delete('/teacher-coefficients/:id', async (req, res) => {
 
 // ============= CLASS COEFFICIENTS =============
 
-// Get all class coefficients
+// Get class coefficients by academic year
 router.get('/class-coefficients', async (req, res) => {
   try {
-    const coefficients = await ClassCoefficient.find().sort({ minStudents: 1 });
+    const { year } = req.query;
+    const filter = year ? { year } : {};
+    const coefficients = await ClassCoefficient.find(filter).sort({ year: -1, minStudents: 1 });
     res.json(coefficients);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get available academic years for class coefficients
+router.get('/class-coefficients/years', async (req, res) => {
+  try {
+    const years = await ClassCoefficient.distinct('year');
+    res.json(years.sort().reverse());
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -146,9 +234,111 @@ router.get('/class-coefficients', async (req, res) => {
 // Create class coefficient
 router.post('/class-coefficients', async (req, res) => {
   try {
+    const { minStudents, maxStudents, year } = req.body;
+
+    // Validation: Kiểm tra số sinh viên không âm
+    if (minStudents < 0 || maxStudents < 0) {
+      return res.status(400).json({ 
+        message: 'Số lượng sinh viên không thể là số âm. Vui lòng nhập số từ 0 trở lên.' 
+      });
+    }
+
+    // Validation: Kiểm tra minStudents <= maxStudents
+    if (minStudents > maxStudents) {
+      return res.status(400).json({ 
+        message: 'Số sinh viên tối thiểu không thể lớn hơn số tối đa.' 
+      });
+    }
+
+    // Validation: kiểm tra chồng lấn khoảng sinh viên trong cùng năm học
+    const overlappingCoeffs = await ClassCoefficient.find({
+      year: year,
+      $or: [
+        // Khoảng mới nằm hoàn toàn trong khoảng đã có
+        { 
+          minStudents: { $lte: minStudents }, 
+          maxStudents: { $gte: maxStudents } 
+        },
+        // Khoảng đã có nằm hoàn toàn trong khoảng mới
+        { 
+          minStudents: { $gte: minStudents }, 
+          maxStudents: { $lte: maxStudents } 
+        },
+        // Overlap bên trái: minStudents nằm trong khoảng đã có
+        { 
+          minStudents: { $lte: minStudents }, 
+          maxStudents: { $gte: minStudents, $lt: maxStudents } 
+        },
+        // Overlap bên phải: maxStudents nằm trong khoảng đã có  
+        { 
+          minStudents: { $gt: minStudents, $lte: maxStudents }, 
+          maxStudents: { $gte: maxStudents } 
+        }
+      ]
+    });
+
+    if (overlappingCoeffs.length > 0) {
+      const existingRange = overlappingCoeffs[0];
+      return res.status(400).json({ 
+        message: `Khoảng sinh viên ${minStudents}-${maxStudents} bị chồng lấn với khoảng đã tồn tại ${existingRange.minStudents}-${existingRange.maxStudents} trong năm học '${year}'. Vui lòng chọn khoảng khác không bị trùng lấp.` 
+      });
+    }
+
     const coefficient = new ClassCoefficient(req.body);
     const savedCoefficient = await coefficient.save();
     res.status(201).json(savedCoefficient);
+  } catch (error) {
+    if (error.code === 11000) { // Lỗi trùng lặp unique index
+      return res.status(400).json({ message: `Khoảng sinh viên này đã có hệ số trong năm học '${req.body.year}'. Vui lòng chọn khoảng sinh viên khác hoặc sửa hệ số hiện tại.` });
+    }
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Copy class coefficients to another academic year
+router.post('/class-coefficients/copy', async (req, res) => {
+  try {
+    const { fromYear, toYear } = req.body;
+    
+    if (!fromYear || !toYear) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp năm học nguồn và năm học đích' });
+    }
+
+    if (fromYear === toYear) {
+      return res.status(400).json({ message: 'Năm học nguồn và năm học đích không được giống nhau' });
+    }
+
+    // Check if target year already has data
+    const existingCoeffs = await ClassCoefficient.find({ year: toYear });
+    if (existingCoeffs.length > 0) {
+      return res.status(400).json({ message: `Năm học '${toYear}' đã có dữ liệu hệ số lớp. Vui lòng xóa dữ liệu cũ trước khi copy.` });
+    }
+
+    // Get source coefficients
+    const sourceCoeffs = await ClassCoefficient.find({ year: fromYear });
+    if (sourceCoeffs.length === 0) {
+      return res.status(400).json({ message: `Không tìm thấy dữ liệu hệ số lớp trong năm học '${fromYear}'` });
+    }
+
+    // Copy to target year
+    const newCoeffs = sourceCoeffs.map(coeff => ({
+      minStudents: coeff.minStudents,
+      maxStudents: coeff.maxStudents,
+      coefficient: coeff.coefficient,
+      year: toYear,
+      description: coeff.description,
+      isActive: coeff.isActive,
+      createdDate: new Date(),
+      updatedDate: new Date()
+    }));
+
+    const savedCoeffs = await ClassCoefficient.insertMany(newCoeffs);
+
+    res.status(201).json({
+      message: `Đã copy thành công ${savedCoeffs.length} hệ số lớp từ năm học '${fromYear}' sang '${toYear}'`,
+      count: savedCoeffs.length,
+      coefficients: savedCoeffs
+    });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -157,10 +347,65 @@ router.post('/class-coefficients', async (req, res) => {
 // Update class coefficient
 router.put('/class-coefficients/:id', async (req, res) => {
   try {
+    const { minStudents, maxStudents, year } = req.body;
+    const currentId = req.params.id;
+
+    // Validation: Kiểm tra số sinh viên không âm
+    if (minStudents < 0 || maxStudents < 0) {
+      return res.status(400).json({ 
+        message: 'Số lượng sinh viên không thể là số âm. Vui lòng nhập số từ 0 trở lên.' 
+      });
+    }
+
+    // Validation: Kiểm tra minStudents <= maxStudents
+    if (minStudents > maxStudents) {
+      return res.status(400).json({ 
+        message: 'Số sinh viên tối thiểu không thể lớn hơn số tối đa.' 
+      });
+    }
+
+    // Validation: kiểm tra chồng lấn khoảng sinh viên trong cùng năm học (trừ record hiện tại)
+    const overlappingCoeffs = await ClassCoefficient.find({
+      _id: { $ne: currentId }, // Loại trừ record đang sửa
+      year: year,
+      $or: [
+        // Khoảng mới nằm hoàn toàn trong khoảng đã có
+        { 
+          minStudents: { $lte: minStudents }, 
+          maxStudents: { $gte: maxStudents } 
+        },
+        // Khoảng đã có nằm hoàn toàn trong khoảng mới
+        { 
+          minStudents: { $gte: minStudents }, 
+          maxStudents: { $lte: maxStudents } 
+        },
+        // Overlap bên trái: minStudents nằm trong khoảng đã có
+        { 
+          minStudents: { $lte: minStudents }, 
+          maxStudents: { $gte: minStudents, $lt: maxStudents } 
+        },
+        // Overlap bên phải: maxStudents nằm trong khoảng đã có  
+        { 
+          minStudents: { $gt: minStudents, $lte: maxStudents }, 
+          maxStudents: { $gte: maxStudents } 
+        }
+      ]
+    });
+
+    if (overlappingCoeffs.length > 0) {
+      const existingRange = overlappingCoeffs[0];
+      return res.status(400).json({ 
+        message: `Khoảng sinh viên ${minStudents}-${maxStudents} bị chồng lấn với khoảng đã tồn tại ${existingRange.minStudents}-${existingRange.maxStudents} trong năm học '${year}'. Vui lòng chọn khoảng khác không bị trùng lấp.` 
+      });
+    }
+
     req.body.updatedDate = new Date();
     const coefficient = await ClassCoefficient.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(coefficient);
   } catch (error) {
+    if (error.code === 11000) { // Lỗi trùng lặp unique index
+      return res.status(400).json({ message: `Khoảng sinh viên này đã có hệ số trong năm học '${req.body.year}'. Vui lòng chọn khoảng sinh viên khác.` });
+    }
     res.status(400).json({ message: error.message });
   }
 });
@@ -186,12 +431,21 @@ router.post('/calculate', async (req, res) => {
     console.log(`Teacher ID: ${teacherId}`);
     console.log(`Semester ID: ${semesterId}`);
 
-    // Get active salary rate
-    const salaryRate = await SalaryRate.findOne({ isActive: true });
-    if (!salaryRate) {
-      return res.status(400).json({ message: 'No active salary rate found' });
+    // Get semester info to determine academic year
+    const semester = await Semester.findById(semesterId);
+    if (!semester) {
+      return res.status(404).json({ message: 'Semester not found' });
     }
-    console.log(`Salary rate: ${salaryRate.ratePerPeriod} VND/period`);
+    console.log(`Semester: ${semester.name} - Academic Year: ${semester.year}`);
+
+    // Get salary rate for the academic year
+    const salaryRate = await SalaryRate.findOne({ name: semester.year });
+    if (!salaryRate) {
+      return res.status(400).json({ 
+        message: `No salary rate found for academic year ${semester.year}. Please set up salary rate for this academic year first.` 
+      });
+    }
+    console.log(`Salary rate for ${semester.year}: ${salaryRate.ratePerPeriod} VND/period`);
 
     // Get teacher info
     const teacher = await Teacher.findById(teacherId).populate('degreeId');
@@ -200,15 +454,15 @@ router.post('/calculate', async (req, res) => {
     }
     console.log(`Teacher found: ${teacher.name} (${teacher.code})`);
 
-    // Get teacher coefficient based on degree
+    // Get teacher coefficient based on degree and academic year
     const teacherCoeff = await TeacherCoefficient.findOne({ 
       degreeId: teacher.degreeId._id,
-      isActive: true 
+      year: semester.year
     });
     if (!teacherCoeff) {
-      return res.status(400).json({ message: `No coefficient found for degree: ${teacher.degreeId.fullName}` });
+      return res.status(400).json({ message: `No coefficient found for degree: ${teacher.degreeId.fullName} in academic year ${semester.year}. Please set up teacher coefficients for this academic year first.` });
     }
-    console.log(`Teacher coefficient: ${teacherCoeff.coefficient}`);
+    console.log(`Teacher coefficient for ${semester.year}: ${teacherCoeff.coefficient}`);
 
     // Get teacher's assignments in the semester - use populate + filter approach
     const allAssignments = await Assignment.find({ teacherId: teacherId })
@@ -257,15 +511,15 @@ router.post('/calculate', async (req, res) => {
 
       console.log(`Processing class: ${classSection.classCode} - ${classSection.className}`);
 
-      // Get class coefficient based on student count
+      // Get class coefficient based on student count and academic year
       const classCoeff = await ClassCoefficient.findOne({
         minStudents: { $lte: classSection.studentCount },
         maxStudents: { $gte: classSection.studentCount },
-        isActive: true
+        year: semester.year
       });
 
       const classCoefficientValue = classCoeff ? classCoeff.coefficient : 0;
-      console.log(`Class coefficient for ${classSection.studentCount} students: ${classCoefficientValue}`);
+      console.log(`Class coefficient for ${classSection.studentCount} students in ${semester.year}: ${classCoefficientValue}`);
 
       // Calculate adjusted periods
       const courseCoefficientValue = course.coefficient || 1.0;
