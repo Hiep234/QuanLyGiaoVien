@@ -1,13 +1,30 @@
 // --- Global Variables and Helper Functions ---
 let currentActiveItem = null;
 let currentActiveSubmenuId = null;
-const API_URL = 'http://localhost:3000/api'; 
+const API_URL = 'http://localhost:3000/api';
 
-function toggleSubmenu(submenuId, parentItem) { 
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Menu system ready
+}); 
+
+function toggleSubmenu(submenuId, parentItem) {
+    
+    // Chỉ toggle submenu hiện tại, không đóng submenu khác
     const submenu = document.getElementById(submenuId);
     const arrow = parentItem.querySelector('.arrow-icon');
+    const isOpening = !submenu.classList.contains('open');
+    
     if (submenu) { 
         submenu.classList.toggle('open'); 
+        
+        // Update parent item state
+        if (isOpening) {
+            parentItem.classList.add('parent-active');
+        } else {
+            parentItem.classList.remove('parent-active');
+        }
+        
         if (arrow) { 
             arrow.classList.toggle('open'); 
             arrow.classList.toggle('fa-chevron-right'); 
@@ -16,9 +33,24 @@ function toggleSubmenu(submenuId, parentItem) {
     } 
 }
 
-function setActive(item, submenuId) { 
-    if (currentActiveItem) { currentActiveItem.classList.remove('active'); }
-    if(item) { item.classList.add('active'); currentActiveItem = item; } else { currentActiveItem = null; }
+function setActive(item, submenuId) {
+    // Remove active from all items
+    document.querySelectorAll('.sidebar-item.active').forEach(activeItem => {
+        activeItem.classList.remove('active');
+    });
+    
+    // Add loading state briefly
+    if (item) {
+        item.classList.add('loading');
+        setTimeout(() => {
+            item.classList.remove('loading');
+            item.classList.add('active');
+        }, 200);
+        currentActiveItem = item;
+    } else {
+        currentActiveItem = null;
+    }
+    
     currentActiveSubmenuId = submenuId;
 }
 
@@ -30,7 +62,8 @@ function handleShowSection(sectionId) {
     'classes-section', 'add-class-form', 'bulk-create-classes-form',
     'assignments-section',
     'statisticsLopMo-section',
-    'salary-rates', 'teacher-coefficients', 'class-coefficients', 'salary-calculation'
+    'salary-rates', 'teacher-coefficients', 'class-coefficients', 'salary-calculation',
+    'teacher-report', 'faculty-report', 'school-report', 'chart-report'
   ];
   allPossibleSectionIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('hidden'); });
   
@@ -58,6 +91,12 @@ function handleShowSection(sectionId) {
     case 'teacher-coefficients': SalaryHandlers.loadTeacherCoefficients(); break;
     case 'class-coefficients': SalaryHandlers.loadClassCoefficients(); break;
     case 'salary-calculation': SalaryHandlers.loadSalaryCalculation(); break;
+    case 'teacher-report': 
+    case 'faculty-report': 
+    case 'school-report': 
+    case 'chart-report': 
+      ReportHandlers.loadReportSection(sectionId); 
+      break;
   }
 }
 
@@ -1919,5 +1958,525 @@ const SalaryHandlers = {
                 setTimeout(() => notification.remove(), 300);
             }
         }, timeout);
+    }
+};
+
+// === REPORT HANDLERS ===
+const ReportHandlers = {
+    currentReportData: null,
+    facultyChart: null,
+    semesterChart: null,
+
+    loadReportSection: async (sectionId) => {
+        try {
+            // Hide all report result sections first
+            ['teacherReportResult', 'facultyReportResult', 'schoolReportResult', 'chartReportResult'].forEach(resultId => {
+                const element = document.getElementById(resultId);
+                if (element) element.classList.add('hidden');
+            });
+
+            // Load common data for all reports
+            await ReportHandlers.loadAvailableYears();
+            
+            if (sectionId === 'teacher-report') {
+                await ReportHandlers.loadTeachers();
+            } else if (sectionId === 'faculty-report') {
+                await ReportHandlers.loadFaculties();
+            }
+        } catch (error) {
+            console.error('Error loading report section:', error);
+            SalaryHandlers.showError('Lỗi tải dữ liệu báo cáo.');
+        }
+    },
+
+    loadAvailableYears: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/reports/available-years`);
+            const years = response.data;
+            
+            // Populate year dropdowns
+            ['reportTeacherYear', 'reportFacultyYear', 'reportSchoolYear', 'chartReportYear'].forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.innerHTML = '<option value="">-- Chọn năm học --</option>' +
+                        years.map(year => `<option value="${year}">${year}</option>`).join('');
+                }
+            });
+        } catch (error) {
+            console.error('Error loading available years:', error);
+        }
+    },
+
+    loadTeachers: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/teachers`);
+            const teachers = response.data;
+            
+            const teacherSelect = document.getElementById('reportTeacherSelect');
+            if (teacherSelect) {
+                teacherSelect.innerHTML = '<option value="">-- Chọn giáo viên --</option>' +
+                    teachers.map(teacher => 
+                        `<option value="${teacher._id}">${teacher.code} - ${teacher.name}</option>`
+                    ).join('');
+            }
+        } catch (error) {
+            console.error('Error loading teachers:', error);
+        }
+    },
+
+    loadFaculties: async () => {
+        try {
+            const response = await axios.get(`${API_URL}/faculties`);
+            const faculties = response.data;
+            
+            const facultySelect = document.getElementById('reportFacultySelect');
+            if (facultySelect) {
+                facultySelect.innerHTML = '<option value="">-- Chọn khoa --</option>' +
+                    faculties.map(faculty => 
+                        `<option value="${faculty._id}">${faculty.shortName} - ${faculty.fullName}</option>`
+                    ).join('');
+            }
+        } catch (error) {
+            console.error('Error loading faculties:', error);
+        }
+    },
+
+    // UC4.1 - Báo cáo tiền dạy của giáo viên trong một năm
+    generateTeacherReport: async () => {
+        const teacherId = document.getElementById('reportTeacherSelect').value;
+        const year = document.getElementById('reportTeacherYear').value;
+
+        if (!teacherId || !year) {
+            return SalaryHandlers.showError('Vui lòng chọn giáo viên và năm học.');
+        }
+
+        try {
+            SalaryHandlers.showNotification('Đang tạo báo cáo...', 'info');
+            const response = await axios.get(`${API_URL}/reports/teacher-salary-by-year/${teacherId}/${year}`);
+            ReportHandlers.currentReportData = response.data;
+            
+            ReportHandlers.displayTeacherReport(response.data);
+            document.getElementById('teacherReportResult').classList.remove('hidden');
+            SalaryHandlers.showNotification('Tạo báo cáo thành công!', 'success');
+            
+        } catch (error) {
+            console.error('Error generating teacher report:', error);
+            SalaryHandlers.showError('Lỗi tạo báo cáo: ' + (error.response?.data?.message || error.message));
+        }
+    },
+
+    displayTeacherReport: (data) => {
+        const content = document.getElementById('teacherReportContent');
+        if (!content) return;
+
+        let html = `
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 class="text-lg font-bold mb-2">Thông tin Giáo viên</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><strong>Mã GV:</strong> ${data.teacher.code}</div>
+                    <div><strong>Họ tên:</strong> ${data.teacher.name}</div>
+                    <div><strong>Khoa:</strong> ${data.teacher.faculty}</div>
+                    <div><strong>Bằng cấp:</strong> ${data.teacher.degree}</div>
+                </div>
+                                    <div class="mt-2">
+                        <strong>Năm học:</strong> ${data.year} | 
+                        <strong class="text-green-600">Tổng tiền dạy:</strong> ${(data.totalSalary || 0).toLocaleString('vi-VN')} VNĐ
+                    </div>
+            </div>
+
+            <div class="space-y-4">
+        `;
+
+        data.reportData.forEach(semester => {
+            html += `
+                <div class="border rounded-lg p-4">
+                    <h4 class="font-bold text-lg mb-3 text-blue-600">
+                        ${semester.semester} (${semester.semesterCode})
+                        <span class="text-green-600 ml-4">
+                            Tiền kì: ${(semester.semesterSalary || 0).toLocaleString('vi-VN')} VNĐ
+                        </span>
+                    </h4>
+                    
+                    ${semester.classes.length > 0 ? `
+                        <table class="w-full border-collapse border border-gray-300 text-sm">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border p-2">STT</th>
+                                    <th class="border p-2">Mã lớp</th>
+                                    <th class="border p-2">Tên học phần</th>
+                                    <th class="border p-2">Số tiết</th>
+                                    <th class="border p-2">SL SV</th>
+                                    <th class="border p-2">Tiền dạy</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${semester.classes.map((cls, index) => `
+                                    <tr>
+                                        <td class="border p-2">${index + 1}</td>
+                                        <td class="border p-2">${cls.classCode}</td>
+                                        <td class="border p-2">${cls.course}</td>
+                                        <td class="border p-2">${cls.periods}</td>
+                                        <td class="border p-2">${cls.studentCount}</td>
+                                        <td class="border p-2">${(cls.salary || 0).toLocaleString('vi-VN')} VNĐ</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    ` : '<p class="text-gray-500 italic">Không có lớp nào trong kì này.</p>'}
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        content.innerHTML = html;
+    },
+
+    // UC4.2 - Báo cáo tiền dạy của giáo viên một khoa
+    generateFacultyReport: async () => {
+        const facultyId = document.getElementById('reportFacultySelect').value;
+        const year = document.getElementById('reportFacultyYear').value;
+
+        if (!facultyId || !year) {
+            return SalaryHandlers.showError('Vui lòng chọn khoa và năm học.');
+        }
+
+        try {
+            SalaryHandlers.showNotification('Đang tạo báo cáo...', 'info');
+            const response = await axios.get(`${API_URL}/reports/faculty-salary-report/${facultyId}/${year}`);
+            ReportHandlers.currentReportData = response.data;
+            
+            ReportHandlers.displayFacultyReport(response.data);
+            document.getElementById('facultyReportResult').classList.remove('hidden');
+            SalaryHandlers.showNotification('Tạo báo cáo thành công!', 'success');
+            
+        } catch (error) {
+            console.error('Error generating faculty report:', error);
+            SalaryHandlers.showError('Lỗi tạo báo cáo: ' + (error.response?.data?.message || error.message));
+        }
+    },
+
+    displayFacultyReport: (data) => {
+        const content = document.getElementById('facultyReportContent');
+        if (!content) return;
+
+        let html = `
+            <div class="mb-6 p-4 bg-purple-50 rounded-lg">
+                <h3 class="text-lg font-bold mb-2">Thông tin Khoa</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><strong>Tên khoa:</strong> ${data.faculty.fullName}</div>
+                    <div><strong>Tên viết tắt:</strong> ${data.faculty.shortName}</div>
+                    <div><strong>Năm học:</strong> ${data.year}</div>
+                    <div><strong>Số giáo viên có dạy:</strong> ${data.totalTeachers}</div>
+                </div>
+                <div class="mt-2">
+                    <strong class="text-green-600">Tổng tiền dạy khoa:</strong> ${data.facultyTotalSalary.toLocaleString('vi-VN')} VNĐ
+                </div>
+            </div>
+
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border p-3">STT</th>
+                        <th class="border p-3">Mã GV</th>
+                        <th class="border p-3">Họ tên</th>
+                        <th class="border p-3">Bằng cấp</th>
+                        <th class="border p-3">Số kì dạy</th>
+                        <th class="border p-3">Tổng tiền dạy</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        data.teacherReports.forEach((teacherReport, index) => {
+            html += `
+                <tr>
+                    <td class="border p-3">${index + 1}</td>
+                    <td class="border p-3">${teacherReport.teacher.code || 'N/A'}</td>
+                    <td class="border p-3">${teacherReport.teacher.name || 'N/A'}</td>
+                    <td class="border p-3">${teacherReport.teacher.degree || 'N/A'}</td>
+                    <td class="border p-3">${teacherReport.semesters.length}</td>
+                    <td class="border p-3">${teacherReport.totalSalary.toLocaleString('vi-VN')} VNĐ</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                </tbody>
+            </table>
+        `;
+
+        content.innerHTML = html;
+    },
+
+    // UC4.3 - Báo cáo tiền dạy của giáo viên toàn trường
+    generateSchoolReport: async () => {
+        const year = document.getElementById('reportSchoolYear').value;
+
+        if (!year) {
+            return SalaryHandlers.showError('Vui lòng chọn năm học.');
+        }
+
+        try {
+            SalaryHandlers.showNotification('Đang tạo báo cáo...', 'info');
+            const response = await axios.get(`${API_URL}/reports/school-salary-report/${year}`);
+            ReportHandlers.currentReportData = response.data;
+            
+            ReportHandlers.displaySchoolReport(response.data);
+            document.getElementById('schoolReportResult').classList.remove('hidden');
+            SalaryHandlers.showNotification('Tạo báo cáo thành công!', 'success');
+            
+        } catch (error) {
+            console.error('Error generating school report:', error);
+            SalaryHandlers.showError('Lỗi tạo báo cáo: ' + (error.response?.data?.message || error.message));
+        }
+    },
+
+    displaySchoolReport: (data) => {
+        const content = document.getElementById('schoolReportContent');
+        if (!content) return;
+
+        let html = `
+            <div class="mb-6 p-4 bg-red-50 rounded-lg">
+                <h3 class="text-lg font-bold mb-2">Báo cáo Toàn trường</h3>
+                <div class="grid grid-cols-3 gap-4">
+                    <div><strong>Năm học:</strong> ${data.year}</div>
+                    <div><strong>Số khoa:</strong> ${data.totalFaculties}</div>
+                    <div><strong class="text-green-600">Tổng tiền dạy:</strong> ${data.schoolTotalSalary.toLocaleString('vi-VN')} VNĐ</div>
+                </div>
+            </div>
+
+            <table class="w-full border-collapse border border-gray-300">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border p-3">STT</th>
+                        <th class="border p-3">Tên khoa</th>
+                        <th class="border p-3">Viết tắt</th>
+                        <th class="border p-3">Số GV dạy</th>
+                        <th class="border p-3">Tổng tiền dạy</th>
+                        <th class="border p-3">% Tổng trường</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        data.facultyReports.forEach((facultyReport, index) => {
+            const percentage = ((facultyReport.totalSalary / data.schoolTotalSalary) * 100).toFixed(1);
+            html += `
+                <tr>
+                    <td class="border p-3">${index + 1}</td>
+                    <td class="border p-3">${facultyReport.faculty.fullName}</td>
+                    <td class="border p-3">${facultyReport.faculty.shortName}</td>
+                    <td class="border p-3">${facultyReport.teacherCount}</td>
+                    <td class="border p-3">${facultyReport.totalSalary.toLocaleString('vi-VN')} VNĐ</td>
+                    <td class="border p-3">${percentage}%</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                </tbody>
+            </table>
+        `;
+
+        content.innerHTML = html;
+    },
+
+    // Biểu đồ thống kê
+    generateChartReport: async () => {
+        const year = document.getElementById('chartReportYear').value;
+
+        if (!year) {
+            return SalaryHandlers.showError('Vui lòng chọn năm học.');
+        }
+
+        try {
+            SalaryHandlers.showNotification('Đang tạo biểu đồ...', 'info');
+            const response = await axios.get(`${API_URL}/reports/statistics/${year}`);
+            const data = response.data;
+            
+            ReportHandlers.displayCharts(data);
+            document.getElementById('chartReportResult').classList.remove('hidden');
+            SalaryHandlers.showNotification('Tạo biểu đồ thành công!', 'success');
+            
+        } catch (error) {
+            console.error('Error generating chart report:', error);
+            SalaryHandlers.showError('Lỗi tạo biểu đồ: ' + (error.response?.data?.message || error.message));
+        }
+    },
+
+    displayCharts: (data) => {
+        // Faculty Chart
+        ReportHandlers.createFacultyChart(data.facultyStats);
+        
+        // Semester Chart
+        ReportHandlers.createSemesterChart(data.semesterStats);
+    },
+
+    createFacultyChart: (facultyStats) => {
+        const ctx = document.getElementById('facultyChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (ReportHandlers.facultyChart) {
+            ReportHandlers.facultyChart.destroy();
+        }
+
+        const labels = facultyStats.map(f => f.faculty);
+        const salaryData = facultyStats.map(f => f.salary);
+        const colors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+        ];
+
+        ReportHandlers.facultyChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: salaryData,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.parsed;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: ${value.toLocaleString('vi-VN')} VNĐ (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    createSemesterChart: (semesterStats) => {
+        const ctx = document.getElementById('semesterChart');
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (ReportHandlers.semesterChart) {
+            ReportHandlers.semesterChart.destroy();
+        }
+
+        const labels = semesterStats.map(s => s.semester);
+        const salaryData = semesterStats.map(s => s.salary);
+
+        ReportHandlers.semesterChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Tiền dạy (VNĐ)',
+                    data: salaryData,
+                    backgroundColor: '#36A2EB',
+                    borderColor: '#36A2EB',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.parsed.y.toLocaleString('vi-VN')} VNĐ`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString('vi-VN');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    // Export functions (placeholder - can be enhanced with actual export functionality)
+    exportTeacherReport: () => {
+        if (!ReportHandlers.currentReportData) {
+            return SalaryHandlers.showError('Không có dữ liệu để xuất.');
+        }
+        
+        // Simple CSV export
+        const data = ReportHandlers.currentReportData;
+        let csv = 'STT,Kì học,Mã lớp,Tên học phần,Số tiết,Số SV,Tiền dạy\n';
+        
+        let stt = 1;
+        data.reportData.forEach(semester => {
+            semester.classes.forEach(cls => {
+                csv += `${stt},${semester.semester},${cls.classCode},${cls.courseName},${cls.periods},${cls.studentCount},${cls.salary}\n`;
+                stt++;
+            });
+        });
+
+        ReportHandlers.downloadCSV(csv, `BaoCao_GV_${data.teacher.teacherCode}_${data.year}.csv`);
+    },
+
+    exportFacultyReport: () => {
+        if (!ReportHandlers.currentReportData) {
+            return SalaryHandlers.showError('Không có dữ liệu để xuất.');
+        }
+        
+        const data = ReportHandlers.currentReportData;
+        let csv = 'STT,Mã GV,Họ tên,Bằng cấp,Số kì dạy,Tổng tiền dạy\n';
+        
+        data.teacherReports.forEach((teacher, index) => {
+            csv += `${index + 1},${teacher.teacher.teacherCode},${teacher.teacher.fullName},${teacher.teacher.degree},${teacher.semesters.length},${teacher.totalSalary}\n`;
+        });
+
+        ReportHandlers.downloadCSV(csv, `BaoCao_Khoa_${data.faculty.shortName}_${data.year}.csv`);
+    },
+
+    exportSchoolReport: () => {
+        if (!ReportHandlers.currentReportData) {
+            return SalaryHandlers.showError('Không có dữ liệu để xuất.');
+        }
+        
+        const data = ReportHandlers.currentReportData;
+        let csv = 'STT,Tên khoa,Viết tắt,Số GV dạy,Tổng tiền dạy,% Tổng trường\n';
+        
+        data.facultyReports.forEach((faculty, index) => {
+            const percentage = ((faculty.totalSalary / data.schoolTotalSalary) * 100).toFixed(1);
+            csv += `${index + 1},${faculty.faculty.fullName},${faculty.faculty.shortName},${faculty.teacherCount},${faculty.totalSalary},${percentage}%\n`;
+        });
+
+        ReportHandlers.downloadCSV(csv, `BaoCao_ToanTruong_${data.year}.csv`);
+    },
+
+    downloadCSV: (csvContent, filename) => {
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            SalaryHandlers.showSuccess('✅ Đã xuất file thành công!');
+        }
     }
 };

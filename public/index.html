@@ -18,13 +18,13 @@
                 <h2 class="text-xl font-bold mb-6">Quản lý Giáo viên</h2>
                 <nav>
                     <!-- Welcome Section -->
-                    <div onclick="setActive(this); handleShowSection('welcome')" class="sidebar-item mb-2">
+                    <div onclick="setActive(this); handleShowSection('welcome')" class="sidebar-item">
                         <i class="fas fa-home menu-icon"></i>
                         <span>Trang chủ</span>
                     </div>
 
                     <!-- Teacher Management Section -->
-                    <div onclick="toggleSubmenu('quanLyGiaoVienSubmenu', this)" class="sidebar-item mb-2">
+                    <div onclick="toggleSubmenu('quanLyGiaoVienSubmenu', this)" class="sidebar-item">
                         <i class="fas fa-users menu-icon"></i>
                         <span>Quản lý Giáo viên</span>
                         <i class="fas fa-chevron-right arrow-icon"></i>
@@ -49,7 +49,7 @@
                     </div>
 
                     <!-- Course Management Section -->
-                    <div onclick="toggleSubmenu('quanLyLopHocSubmenu', this)" class="sidebar-item mb-2">
+                    <div onclick="toggleSubmenu('quanLyLopHocSubmenu', this)" class="sidebar-item">
                         <i class="fas fa-book menu-icon"></i>
                         <span>Quản lý Lớp học</span>
                         <i class="fas fa-chevron-right arrow-icon"></i>
@@ -78,7 +78,7 @@
                     </div>
 
                     <!-- Salary Calculation Section -->
-                    <div onclick="toggleSubmenu('tinhTienDaySubmenu', this)" class="sidebar-item mb-2">
+                    <div onclick="toggleSubmenu('tinhTienDaySubmenu', this)" class="sidebar-item">
                         <i class="fas fa-calculator menu-icon"></i>
                         <span>Tính tiền dạy</span>
                         <i class="fas fa-chevron-right arrow-icon"></i>
@@ -99,6 +99,31 @@
                         <a onclick="setActive(this, 'tinhTienDaySubmenu'); handleShowSection('salary-calculation')" class="sidebar-item block no-underline text-white">
                             <i class="fas fa-calculator menu-icon"></i>
                             <span>Tính tiền dạy</span>
+                        </a>
+                    </div>
+
+                    <!-- Reports Section -->
+                    <div onclick="toggleSubmenu('baoCaoSubmenu', this)" class="sidebar-item">
+                        <i class="fas fa-chart-bar menu-icon"></i>
+                        <span>Báo cáo</span>
+                        <i class="fas fa-chevron-right arrow-icon"></i>
+                    </div>
+                    <div id="baoCaoSubmenu" class="submenu">
+                        <a onclick="setActive(this, 'baoCaoSubmenu'); handleShowSection('teacher-report')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-user-tie menu-icon"></i>
+                            <span>BC Tiền dạy GV</span>
+                        </a>
+                        <a onclick="setActive(this, 'baoCaoSubmenu'); handleShowSection('faculty-report')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-building menu-icon"></i>
+                            <span>BC Tiền dạy Khoa</span>
+                        </a>
+                        <a onclick="setActive(this, 'baoCaoSubmenu'); handleShowSection('school-report')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-university menu-icon"></i>
+                            <span>BC Tiền dạy Trường</span>
+                        </a>
+                        <a onclick="setActive(this, 'baoCaoSubmenu'); handleShowSection('chart-report')" class="sidebar-item block no-underline text-white">
+                            <i class="fas fa-chart-pie menu-icon"></i>
+                            <span>Biểu đồ thống kê</span>
                         </a>
                     </div>
                 </nav>
@@ -1280,6 +1305,159 @@
                 </div>
             </div>
         </div>
+
+        <!-- Teacher Report Section -->
+        <div id="teacher-report" class="container mx-auto p-8 hidden">
+            <div class="max-w-6xl mx-auto">
+                <h1 class="text-3xl font-bold mb-8 text-center text-gray-800">Báo cáo tiền dạy của Giáo viên</h1>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-6 border border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Chọn Giáo viên*:</label>
+                            <select id="reportTeacherSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">-- Chọn giáo viên --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Chọn Năm học*:</label>
+                            <select id="reportTeacherYear" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">-- Chọn năm học --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button onclick="ReportHandlers.generateTeacherReport()" class="bg-blue-500 text-white px-8 py-3 rounded-lg hover:bg-blue-600 transition duration-200 shadow-md">
+                            <i class="fas fa-chart-line mr-2"></i>Tạo báo cáo
+                        </button>
+                    </div>
+                </div>
+
+                <div id="teacherReportResult" class="bg-white p-6 rounded-lg shadow-lg hidden border border-gray-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Kết quả báo cáo</h2>
+                        <button onclick="ReportHandlers.exportTeacherReport()" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-200 shadow-md">
+                            <i class="fas fa-download mr-2"></i>Xuất Excel
+                        </button>
+                    </div>
+                    <div id="teacherReportContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Faculty Report Section -->
+        <div id="faculty-report" class="container mx-auto p-8 hidden">
+            <div class="max-w-6xl mx-auto">
+                <h1 class="text-3xl font-bold mb-8 text-center text-gray-800">Báo cáo tiền dạy theo Khoa</h1>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-6 border border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Chọn Khoa*:</label>
+                            <select id="reportFacultySelect" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                <option value="">-- Chọn khoa --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Chọn Năm học*:</label>
+                            <select id="reportFacultyYear" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                                <option value="">-- Chọn năm học --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button onclick="ReportHandlers.generateFacultyReport()" class="bg-purple-500 text-white px-8 py-3 rounded-lg hover:bg-purple-600 transition duration-200 shadow-md">
+                            <i class="fas fa-chart-bar mr-2"></i>Tạo báo cáo
+                        </button>
+                    </div>
+                </div>
+
+                <div id="facultyReportResult" class="bg-white p-6 rounded-lg shadow-lg hidden border border-gray-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Kết quả báo cáo</h2>
+                        <button onclick="ReportHandlers.exportFacultyReport()" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-200 shadow-md">
+                            <i class="fas fa-download mr-2"></i>Xuất Excel
+                        </button>
+                    </div>
+                    <div id="facultyReportContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- School Report Section -->
+        <div id="school-report" class="container mx-auto p-8 hidden">
+            <div class="max-w-6xl mx-auto">
+                <h1 class="text-3xl font-bold mb-8 text-center text-gray-800">Báo cáo tiền dạy toàn Trường</h1>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-6 border border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Chọn Năm học*:</label>
+                            <select id="reportSchoolYear" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500">
+                                <option value="">-- Chọn năm học --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button onclick="ReportHandlers.generateSchoolReport()" class="bg-red-500 text-white px-8 py-3 rounded-lg hover:bg-red-600 transition duration-200 shadow-md">
+                            <i class="fas fa-university mr-2"></i>Tạo báo cáo
+                        </button>
+                    </div>
+                </div>
+
+                <div id="schoolReportResult" class="bg-white p-6 rounded-lg shadow-lg hidden border border-gray-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Kết quả báo cáo</h2>
+                        <button onclick="ReportHandlers.exportSchoolReport()" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition duration-200 shadow-md">
+                            <i class="fas fa-download mr-2"></i>Xuất Excel
+                        </button>
+                    </div>
+                    <div id="schoolReportContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Report Section -->
+        <div id="chart-report" class="container mx-auto p-8 hidden">
+            <div class="max-w-6xl mx-auto">
+                <h1 class="text-3xl font-bold mb-8 text-center text-gray-800">Biểu đồ thống kê</h1>
+                
+                <div class="bg-white p-6 rounded-lg shadow-lg mb-6 border border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Chọn Năm học*:</label>
+                            <select id="chartReportYear" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">-- Chọn năm học --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button onclick="ReportHandlers.generateChartReport()" class="bg-indigo-500 text-white px-8 py-3 rounded-lg hover:bg-indigo-600 transition duration-200 shadow-md">
+                            <i class="fas fa-chart-pie mr-2"></i>Tạo biểu đồ
+                        </button>
+                    </div>
+                </div>
+
+                <div id="chartReportResult" class="hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Faculty Chart -->
+                        <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+                            <h2 class="text-xl font-bold mb-4 text-gray-800">Tiền dạy theo Khoa</h2>
+                            <div class="w-full h-64">
+                                <canvas id="facultyChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <!-- Semester Chart -->
+                        <div class="bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+                            <h2 class="text-xl font-bold mb-4 text-gray-800">Tiền dạy theo Kì học</h2>
+                            <div class="w-full h-64">
+                                <canvas id="semesterChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <script src="app.js"></script>

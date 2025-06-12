@@ -20,6 +20,7 @@ app.use('/api/semesters', require('./routes/semesters'));
 app.use('/api/classsections', require('./routes/classsections'));
 app.use('/api/assignments', require('./routes/assignments'));
 app.use('/api/salary', require('./routes/salaryRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
 
 
 
